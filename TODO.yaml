@@ -1,0 +1,11 @@
+---
+modules later:
+  - google: !translate
+  - google: !youtube
+  - google: rewrite !google with api
+  - talkbot: !sender
+  - talkbot: !quote
+  - note: port in n/n+, n/nl, n/n?
+
+general:
+  - drop unnecessary 1:1 database mapping wherever applicable
