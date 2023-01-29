@@ -6,6 +6,9 @@ modules later:
   - talkbot: !sender
   - talkbot: !quote
   - note: port in n/n+, n/nl, n/n?
+  - vote: vote module
+  - roll: roll a random number
+  - dns: resolve a domain name
 
 general:
   - drop unnecessary 1:1 database mapping wherever applicable
