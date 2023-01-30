@@ -6,6 +6,8 @@
   "scripts": {
     "develop": "npx nodemon --ignore ./data ./src/index.ts",
     "createdb": "ts-node scripts/create_db.ts",
+    "build": "npx tsc",
+    "start": "node dist/src/index.js",
     "lint": "npx eslint ./src"
   },
   "author": "",
