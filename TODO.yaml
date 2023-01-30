@@ -9,6 +9,7 @@ modules:
   - vote: vote module
   - roll: roll a random number
   - dns: resolve a domain name
+  - note: maybe escape markdown again
 
 general:
   - drop unnecessary 1:1 database mapping wherever applicable

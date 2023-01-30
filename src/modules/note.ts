@@ -35,8 +35,7 @@ async function listNotes(channel: TextBasedChannel, entries: NoteEntry[]): Promi
   for (let i = 0; i < entries.length; ++i) {
     const entry = entries[i];
     const id = i + 1;
-    const escaped = entry.note.replaceAll('*', '\\*').replaceAll('_', '\\_').replaceAll('`', '\\`');
-    const transformed = `**[${id}]** ${escaped}\n`;
+    const transformed = `**[${id}]** ${entry.note}\n`;
 
     if (!buffer.canWrite(transformed)) {
       await sendEmbed(channel, buffer.content);
