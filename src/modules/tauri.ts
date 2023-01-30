@@ -5,6 +5,7 @@ import { ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
 
 interface TauriJSONStatusEntry {
   readonly shortname: string;
+  readonly hidden: string;
   readonly status: string;
   readonly online: number;
   readonly horde: number;
@@ -38,7 +39,11 @@ export class TauriModule extends Module {
     const embed = new EmbedBuilder();
 
     for (const realm of json) {
-      const realmStatus = `Total: ${realm.online} Horde: ${realm.horde} Alliance: ${realm.alliance}`;
+      if (realm.hidden === 'true') {
+        continue;
+      }
+
+      const realmStatus = `Total: ${realm.online} Horde: ${realm.horde} Alliance: ${realm.alliance} Status: ${realm.status}`;
       embed.addFields({ name: realm.shortname, value: realmStatus });
     }
 
