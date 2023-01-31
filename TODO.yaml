@@ -10,6 +10,7 @@ modules:
   - roll: roll a random number
   - dns: resolve a domain name
   - note: maybe escape markdown again
+  - talkbot: clean up obsolete table structure
 
 general:
   - drop unnecessary 1:1 database mapping wherever applicable
