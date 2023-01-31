@@ -136,8 +136,8 @@ export class ReminderModule extends Module {
       'delete',
       'Delete the specified reminders by ID',
       [
-        new Option('user', 'User to search', CommandOptionType.User, false),
         new Option('ids', 'Reminder IDs', CommandOptionType.String),
+        new Option('user', 'User to search', CommandOptionType.User, false),
       ],
       async (interaction) => this.reminderDeleteCommand(interaction)
     );
