@@ -135,7 +135,10 @@ export class ReminderModule extends Module {
     const reminderDelete = new Command(
       'delete',
       'Delete the specified reminders by ID',
-      [new Option('ids', 'Reminder IDs', CommandOptionType.String)],
+      [
+        new Option('user', 'User to search', CommandOptionType.User, false),
+        new Option('ids', 'Reminder IDs', CommandOptionType.String),
+      ],
       async (interaction) => this.reminderDeleteCommand(interaction)
     );
 
@@ -284,15 +287,15 @@ export class ReminderModule extends Module {
   }
 
   private async reminderListCommand(interaction: ChatInputCommandInteraction): Promise<void> {
-    const sender = interaction.options.get('user')?.value?.toString() ?? interaction.user.id;
+    const userid = interaction.options.get('user')?.value?.toString() ?? interaction.user.id;
 
-    if (sender !== interaction.user.id) {
+    if (userid !== interaction.user.id) {
       if (!(await checkInteractionPermissions(interaction, [ManageGuild]))) {
         return;
       }
     }
 
-    const entries = await this.database.getEntriesForSenderInGuild(sender, interaction.guildId);
+    const entries = await this.database.getEntriesForSenderInGuild(userid, interaction.guildId);
 
     if (entries.length === 0) {
       await interaction.reply('No reminders.');
@@ -319,13 +322,17 @@ export class ReminderModule extends Module {
   }
 
   private async reminderDeleteCommand(interaction: ChatInputCommandInteraction): Promise<void> {
-    if (!(await checkInteractionPermissions(interaction, [ManageGuild]))) {
-      return;
+    const userid = interaction.options.get('user')?.value?.toString() ?? interaction.user.id;
+
+    if (userid !== interaction.user.id) {
+      if (!(await checkInteractionPermissions(interaction, [ManageGuild]))) {
+        return;
+      }
     }
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const ids = interaction.options.get('ids')!.value!.toString();
-    const entries = await this.database.getEntriesForSenderInGuild(interaction.user.id, interaction.guildId);
+    const entries = await this.database.getEntriesForSenderInGuild(userid, interaction.guildId);
     const selectedEntries = [];
 
     for (const idPart of ids.split(',')) {
