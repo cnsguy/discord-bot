@@ -10,7 +10,6 @@ modules:
   - roll: roll a random number
   - dns: resolve a domain name
   - note: maybe escape markdown again
-  - talkbot: clean up obsolete table structure
   - geoiplookup: geoip lookup
 
 general:

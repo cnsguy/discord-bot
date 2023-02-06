@@ -28,32 +28,16 @@ export class TalkbotDatabase {
   }
 
   public async getRandomEntry(): Promise<ContentEntry> {
-    const raw: RawContentEntry | undefined = await this.database.get(
-      'SELECT * FROM talkbot_content ORDER BY RANDOM() LIMIT 1'
-    );
+    const raw: RawContentEntry | undefined = await this.database.get('SELECT * FROM talkbot ORDER BY RANDOM() LIMIT 1');
 
     if (raw === undefined) {
-      throw new TalkbotDatabaseError('Failed to get a quote from the talkbot_content table');
+      throw new TalkbotDatabaseError('Failed to get a quote from the talkbot table');
     }
 
     return new ContentEntry(raw.quote);
   }
 
   public async newEntry(quote: string, userId: string): Promise<void> {
-    await this.database.run('INSERT OR IGNORE INTO talkbot_content (quote) VALUES (?)', quote);
-    const rawId: RawContentEntryId | undefined = await this.database.get(
-      'SELECT id FROM talkbot_content WHERE quote = ?',
-      quote
-    );
-
-    if (rawId === undefined) {
-      throw new TalkbotDatabaseError('newEntry: rawId was undefined');
-    }
-
-    await this.database.run(
-      'INSERT OR IGNORE INTO talkbot_discord (contentId, userId) VALUES (?, ?)',
-      rawId.id,
-      userId
-    );
+    await this.database.run('INSERT OR IGNORE INTO talkbot (userId, quote) VALUES (?, ?)', userId, quote);
   }
 }
