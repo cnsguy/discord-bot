@@ -1,7 +1,7 @@
 import { Module } from '../module';
-import { Command } from '../command';
+import { Command, CommandInteraction } from '../command';
 import { Bot } from '../bot';
-import { ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
+import { EmbedBuilder } from 'discord.js';
 
 interface TauriJSONStatusEntry {
   readonly shortname: string;
@@ -17,8 +17,8 @@ export class TauriModule extends Module {
   private constructor(private readonly bot: Bot) {
     super();
     this.bot = bot;
-    this.bot.registerCommandEntry(
-      new Command('tauri', 'Tauri status', [], async (interaction) => this.tauriCommand(interaction))
+    this.bot.registerCommand(
+      new Command('tauri', 'Tauri status', '-', 0, 0, async (interaction) => this.tauriCommand(interaction))
     );
   }
 
@@ -26,7 +26,7 @@ export class TauriModule extends Module {
     return new TauriModule(bot);
   }
 
-  private async tauriCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async tauriCommand(interaction: CommandInteraction): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const response = await fetch('https://tauriwow.com/files/serverstatus_json.php');
 

@@ -2,8 +2,8 @@ import { Module } from '../module';
 import { Bot } from '../bot';
 import { limitTextLength, escapeLinksForDiscord } from '../util';
 import { RSSItemError, RSSItem } from './rss/item';
-import { Command, CommandGroup, Option, CommandOptionType, GroupedCommandGroup } from '../command';
-import { ChatInputCommandInteraction, EmbedBuilder, TextBasedChannel } from 'discord.js';
+import { Command, CommandInteraction } from '../command';
+import { EmbedBuilder, TextBasedChannel } from 'discord.js';
 import { RSSDatabase } from './rss/database';
 import { checkInteractionPermissions, ManageGuild } from '../permission';
 
@@ -16,34 +16,38 @@ export class RSSModule extends Module {
 
   private constructor(private readonly bot: Bot) {
     const rssMonitorLink = new Command(
-      'link',
+      'rss-monitor-link',
       'Monitor a link for RSS updates',
-      [
-        new Option('link', 'RSS feed link', CommandOptionType.String),
-        new Option('title', 'Regex pattern for the RSS item title', CommandOptionType.String, false),
-        new Option('content', 'Regex pattern for the RSS item content', CommandOptionType.String, false),
-      ],
+      '<link> (<title>) (<content>)',
+      1,
+      3,
       async (interaction) => this.rssMonitorLinkCommand(interaction)
     );
 
     const rssMonitorList = new Command(
-      'list',
+      'rss-monitor-list',
       'List all currently monitored RSS links in the current channel',
-      [],
+      '-',
+      0,
+      0,
       async (interaction) => this.rssMonitorListCommand(interaction)
     );
 
     const rssUnmonitorIds = new Command(
-      'ids',
-      'Delete a rss entries from the database',
-      [new Option('ids', 'Entry IDs', CommandOptionType.String)],
+      'rss-unmonitor-ids',
+      'Delete rss entries from the database',
+      '<entries...>',
+      1,
+      null,
       async (interaction) => this.rssUnmonitorIdsCommand(interaction)
     );
 
     const rssUnmonitorAll = new Command(
-      'all',
+      'rss-unmonitor-all',
       'Stop monitoring all links for RSS updates in the current channel',
-      [],
+      '-',
+      0,
+      0,
       async (interaction) => this.rssUnmonitorAllCommand(interaction)
     );
 
@@ -51,12 +55,10 @@ export class RSSModule extends Module {
     this.bot = bot;
     this.database = new RSSDatabase(this.bot.database);
 
-    this.bot.registerCommandEntry(
-      new GroupedCommandGroup('rss', 'RSS monitoring commands', [
-        new CommandGroup('monitor', 'RSS watch commands', [rssMonitorLink, rssMonitorList]),
-        new CommandGroup('unmonitor', 'RSS watch commands', [rssUnmonitorIds, rssUnmonitorAll]),
-      ])
-    );
+    this.bot.registerCommand(rssMonitorLink);
+    this.bot.registerCommand(rssMonitorList);
+    this.bot.registerCommand(rssUnmonitorIds);
+    this.bot.registerCommand(rssUnmonitorAll);
 
     setInterval(() => void this.timerTick(), 30000);
   }
@@ -147,23 +149,22 @@ export class RSSModule extends Module {
     await channel.send({ embeds: [builder] });
   }
 
-  private async rssMonitorLinkCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async rssMonitorLinkCommand(interaction: CommandInteraction): Promise<void> {
     if (!(await checkInteractionPermissions(interaction, [ManageGuild]))) {
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const link = interaction.options.get('link')!.value!.toString();
-    const titleRegex = interaction.options.get('title')?.value?.toString() ?? null;
-    const contentRegex = interaction.options.get('content')?.value?.toString() ?? null;
-    const entry = await this.database.getEntry(interaction.channelId, link, titleRegex, contentRegex);
+    const link = interaction.args[0];
+    const titleRegex = interaction.args[1];
+    const contentRegex = interaction.args[2];
+    const entry = await this.database.getEntry(interaction.channel.id, link, titleRegex, contentRegex);
 
     if (entry !== undefined) {
       await interaction.reply('An identical rss entry already exists.');
       return;
     }
 
-    const entries = await this.database.getEntriesForChannel(interaction.channelId);
+    const entries = await this.database.getEntriesForChannel(interaction.channel.id);
 
     if (entries.length >= 10) {
       await interaction.reply('Maximum 10 rss entries may exist for a single channel.');
@@ -181,12 +182,12 @@ export class RSSModule extends Module {
       return;
     }
 
-    await this.database.newEntry(interaction.channelId, link, titleRegex, contentRegex);
+    await this.database.newEntry(interaction.channel.id, link, titleRegex, contentRegex);
     await interaction.reply('Added.');
   }
 
-  private async rssMonitorListCommand(interaction: ChatInputCommandInteraction): Promise<void> {
-    const results = await this.database.getEntriesForChannel(interaction.channelId);
+  private async rssMonitorListCommand(interaction: CommandInteraction): Promise<void> {
+    const results = await this.database.getEntriesForChannel(interaction.channel.id);
 
     if (results.length === 0) {
       await interaction.reply('There are no entries for this channel.');
@@ -216,17 +217,16 @@ export class RSSModule extends Module {
     });
   }
 
-  private async rssUnmonitorIdsCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async rssUnmonitorIdsCommand(interaction: CommandInteraction): Promise<void> {
     if (!(await checkInteractionPermissions(interaction, [ManageGuild]))) {
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const ids = interaction.options.get('ids')!.value!.toString();
-    const entries = await this.database.getEntriesForChannel(interaction.channelId);
+    const ids = interaction.args;
+    const entries = await this.database.getEntriesForChannel(interaction.channel.id);
     const selectedEntries = [];
 
-    for (const idPart of ids.split(',')) {
+    for (const idPart of ids) {
       const id = Number(idPart.trim());
 
       if (id < 1 || id > entries.length) {
@@ -245,12 +245,12 @@ export class RSSModule extends Module {
     await interaction.reply('Deleted.');
   }
 
-  private async rssUnmonitorAllCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async rssUnmonitorAllCommand(interaction: CommandInteraction): Promise<void> {
     if (!(await checkInteractionPermissions(interaction, [ManageGuild]))) {
       return;
     }
 
-    const entries = await this.database.getEntriesForChannel(interaction.channelId);
+    const entries = await this.database.getEntriesForChannel(interaction.channel.id);
 
     if (entries.length == 0) {
       await interaction.reply('There are no entries for this channel.');

@@ -14,7 +14,6 @@ modules:
 
 general:
   - drop unnecessary 1:1 database mapping wherever applicable
-  - rewrite command handling to use ! instead - could work with discrord-irc
 
 bugs?:
   - reminder: repeating reminders will only get sent once even if the interval has passed multiple times since the bot was last running

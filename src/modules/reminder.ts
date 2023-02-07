@@ -1,7 +1,7 @@
 import { Module } from '../module';
 import { Bot } from '../bot';
-import { Command, CommandGroup, Option, CommandOptionType } from '../command';
-import { ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
+import { Command, CommandInteraction } from '../command';
+import { EmbedBuilder } from 'discord.js';
 import { ReminderDatabase } from './reminder/database';
 import { splitEvery } from 'ramda';
 import { parseDate } from 'chrono-node';
@@ -15,6 +15,11 @@ enum DatePart {
   Hour = 4,
   Minute = 5,
   Second = 6,
+}
+
+function parseUserId(arg: string): string | null {
+  const match = /<@(\d+)>/.exec(arg);
+  return match === null ? null : match[1];
 }
 
 function matchDatePart(part: string): DatePart | null {
@@ -96,61 +101,75 @@ export class ReminderModule extends Module {
 
   private constructor(private readonly bot: Bot) {
     const reminderOn = new Command(
-      'on',
+      'reminder-on',
       'Show a reminder once on a specific date',
-      [
-        new Option('date', 'When to show it', CommandOptionType.String),
-        new Option('message', 'Message to show', CommandOptionType.String),
-      ],
+      '<date> <message>',
+      2,
+      2,
       async (interaction) => this.reminderOnCommand(interaction)
     );
 
     const reminderIn = new Command(
-      'in',
+      'reminder-in',
       'Show a reminder once on a specific date (relative)',
-      [
-        new Option('date', 'When to show it', CommandOptionType.String),
-        new Option('message', 'Message to show', CommandOptionType.String),
-      ],
+      '<date> <message>',
+      2,
+      2,
       async (interaction) => this.reminderInCommand(interaction)
     );
 
     const reminderEach = new Command(
-      'each',
+      'reminder-each',
       'Repeat a reminder based on an interval (relative)',
-      [
-        new Option('interval', 'Interval to repeat the message in (relative)', CommandOptionType.String),
-        new Option('message', 'Message to show', CommandOptionType.String),
-      ],
+      '<interval> <message>',
+      2,
+      2,
       async (interaction) => this.reminderEachCommand(interaction)
     );
 
     const reminderList = new Command(
-      'list',
-      'List all reminders in the current server for a given user or yourself',
-      [new Option('user', 'User to search', CommandOptionType.User, false)],
+      'reminder-list',
+      'List all reminders in your current server',
+      '-',
+      0,
+      0,
       async (interaction) => this.reminderListCommand(interaction)
     );
 
+    const reminderAdminList = new Command(
+      'reminder-admin-list',
+      'List all reminders in the current server for a given user',
+      '<user>',
+      1,
+      1,
+      async (interaction) => this.reminderAdminListCommand(interaction)
+    );
+
     const reminderDelete = new Command(
-      'delete',
+      'reminder-delete',
       'Delete the specified reminders by ID',
-      [
-        new Option('ids', 'Reminder IDs', CommandOptionType.String),
-        new Option('user', 'User to search', CommandOptionType.User, false),
-      ],
+      '<ids...>',
+      1,
+      null,
       async (interaction) => this.reminderDeleteCommand(interaction)
     );
 
-    bot.registerCommandEntry(
-      new CommandGroup('reminder', 'Reminder commands', [
-        reminderOn,
-        reminderIn,
-        reminderEach,
-        reminderList,
-        reminderDelete,
-      ])
+    const reminderAdminDelete = new Command(
+      'reminder-admin-delete',
+      'Delete the specified reminders by ID for a given user',
+      '<user> <ids...>',
+      2,
+      null,
+      async (interaction) => this.reminderAdminDeleteCommand(interaction)
     );
+
+    bot.registerCommand(reminderOn);
+    bot.registerCommand(reminderIn);
+    bot.registerCommand(reminderEach);
+    bot.registerCommand(reminderList);
+    bot.registerCommand(reminderAdminList);
+    bot.registerCommand(reminderDelete);
+    bot.registerCommand(reminderAdminDelete);
 
     super();
     this.bot = bot;
@@ -188,7 +207,7 @@ export class ReminderModule extends Module {
     }
   }
 
-  private async checkUserNoteLimit(interaction: ChatInputCommandInteraction): Promise<boolean> {
+  private async checkUserNoteLimit(interaction: CommandInteraction): Promise<boolean> {
     if (interaction.guild === null) {
       return true;
     }
@@ -197,16 +216,14 @@ export class ReminderModule extends Module {
     return entries.length >= 10;
   }
 
-  private async reminderOnCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async reminderOnCommand(interaction: CommandInteraction): Promise<void> {
     if (await this.checkUserNoteLimit(interaction)) {
       await interaction.reply('You have too many reminders on this server.');
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const date = interaction.options.get('date')!.value!.toString();
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const message = interaction.options.get('message')!.value!.toString();
+    const date = interaction.args[0];
+    const message = interaction.args[1];
     const nextDate: Date | null = parseDate(date);
 
     if (nextDate === null) {
@@ -216,8 +233,8 @@ export class ReminderModule extends Module {
 
     await this.database.newEntry(
       message,
-      interaction.guildId,
-      interaction.channelId,
+      interaction.guild?.id ?? null,
+      interaction.channel.id,
       interaction.user.id,
       nextDate,
       null
@@ -226,16 +243,14 @@ export class ReminderModule extends Module {
     await interaction.reply('Reminder set.');
   }
 
-  private async reminderInCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async reminderInCommand(interaction: CommandInteraction): Promise<void> {
     if (await this.checkUserNoteLimit(interaction)) {
       await interaction.reply('You have too many reminders on this server.');
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const date = interaction.options.get('date')!.value!.toString();
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const message = interaction.options.get('message')!.value!.toString();
+    const date = interaction.args[0];
+    const message = interaction.args[1];
     const relativeDate = parseRelativeDate(date);
 
     if (relativeDate === null) {
@@ -246,8 +261,8 @@ export class ReminderModule extends Module {
     const nextDate = new Date(Date.now() + relativeDate.getTime());
     await this.database.newEntry(
       message,
-      interaction.guildId,
-      interaction.channelId,
+      interaction.guild?.id ?? null,
+      interaction.channel.id,
       interaction.user.id,
       nextDate,
       null
@@ -256,16 +271,14 @@ export class ReminderModule extends Module {
     await interaction.reply('Reminder set.');
   }
 
-  private async reminderEachCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async reminderEachCommand(interaction: CommandInteraction): Promise<void> {
     if (await this.checkUserNoteLimit(interaction)) {
       await interaction.reply('You have too many reminders on this server.');
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const date = interaction.options.get('interval')!.value!.toString();
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const message = interaction.options.get('message')!.value!.toString();
+    const date = interaction.args[0];
+    const message = interaction.args[1];
     const interval = parseRelativeDate(date);
 
     if (interval === null) {
@@ -276,8 +289,8 @@ export class ReminderModule extends Module {
     const nextDate = new Date(Date.now() + interval.getTime());
     await this.database.newEntry(
       message,
-      interaction.guildId,
-      interaction.channelId,
+      interaction.guild?.id ?? null,
+      interaction.channel.id,
       interaction.user.id,
       nextDate,
       interval
@@ -286,16 +299,8 @@ export class ReminderModule extends Module {
     await interaction.reply('Reminder set.');
   }
 
-  private async reminderListCommand(interaction: ChatInputCommandInteraction): Promise<void> {
-    const userid = interaction.options.get('user')?.value?.toString() ?? interaction.user.id;
-
-    if (userid !== interaction.user.id) {
-      if (!(await checkInteractionPermissions(interaction, [ManageGuild]))) {
-        return;
-      }
-    }
-
-    const entries = await this.database.getEntriesForSenderInGuild(userid, interaction.guildId);
+  private async reminderList(interaction: CommandInteraction, userId: string): Promise<void> {
+    const entries = await this.database.getEntriesForSenderInGuild(userId, interaction.guild?.id ?? null);
 
     if (entries.length === 0) {
       await interaction.reply('No reminders.');
@@ -321,21 +326,30 @@ export class ReminderModule extends Module {
     await interaction.reply({ embeds: embeds });
   }
 
-  private async reminderDeleteCommand(interaction: ChatInputCommandInteraction): Promise<void> {
-    const userid = interaction.options.get('user')?.value?.toString() ?? interaction.user.id;
+  private async reminderListCommand(interaction: CommandInteraction): Promise<void> {
+    return this.reminderList(interaction, interaction.user.id);
+  }
 
-    if (userid !== interaction.user.id) {
-      if (!(await checkInteractionPermissions(interaction, [ManageGuild]))) {
-        return;
-      }
+  private async reminderAdminListCommand(interaction: CommandInteraction): Promise<void> {
+    if (!(await checkInteractionPermissions(interaction, [ManageGuild]))) {
+      return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const ids = interaction.options.get('ids')!.value!.toString();
-    const entries = await this.database.getEntriesForSenderInGuild(userid, interaction.guildId);
+    const userId = parseUserId(interaction.args[0]);
+
+    if (userId === null) {
+      await interaction.reply('Could not parse user');
+      return;
+    }
+
+    return this.reminderList(interaction, userId);
+  }
+
+  private async reminderDelete(interaction: CommandInteraction, userId: string, ids: string[]): Promise<void> {
+    const entries = await this.database.getEntriesForSenderInGuild(userId, interaction.guild?.id ?? null);
     const selectedEntries = [];
 
-    for (const idPart of ids.split(',')) {
+    for (const idPart of ids) {
       const id = Number(idPart.trim());
 
       if (id < 1 || id > entries.length) {
@@ -352,5 +366,24 @@ export class ReminderModule extends Module {
     }
 
     await interaction.reply('Deleted.');
+  }
+
+  private async reminderDeleteCommand(interaction: CommandInteraction): Promise<void> {
+    return this.reminderDelete(interaction, interaction.user.id, interaction.args);
+  }
+
+  private async reminderAdminDeleteCommand(interaction: CommandInteraction): Promise<void> {
+    if (!(await checkInteractionPermissions(interaction, [ManageGuild]))) {
+      return;
+    }
+
+    const userId = parseUserId(interaction.args[0]);
+
+    if (userId === null) {
+      await interaction.reply('Could not parse user');
+      return;
+    }
+
+    return this.reminderDelete(interaction, userId, interaction.args.slice(1));
   }
 }

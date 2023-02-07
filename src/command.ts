@@ -1,127 +1,141 @@
-import { ChatInputCommandInteraction } from 'discord.js';
-import { UniqueMap } from './unique_map';
-import { map, arrayFrom, pipe } from 'iter-tools';
+import { Guild, MessageCreateOptions, MessagePayload, PermissionsBitField, TextBasedChannel, User } from 'discord.js';
+import { Parser } from './parser';
 
-export enum CommandType {
-  Command = 1,
-  CommandGroup = 2,
-}
-
-export enum CommandOptionType {
-  String = 3,
-  Int = 4,
-  Boolean = 5,
-  User = 6,
-  Channel = 7,
-  Role = 8,
-  Mentionable = 9,
-  Double = 10,
-  Attachment = 11,
-}
-
-export type CommandCallback = (interaction: ChatInputCommandInteraction) => Promise<void>;
-
-export abstract class CommandBase {
-  protected constructor(public readonly name: string, public readonly description: string) {
-    this.name = name;
-    this.description = description;
-  }
-
-  public abstract toApiJSON(): object;
-}
-
-export class Command extends CommandBase {
-  private readonly optionMap: Map<string, Option>;
-
-  public constructor(name: string, description: string, options: Option[], public readonly callback: CommandCallback) {
-    super(name, description);
-    this.optionMap = new UniqueMap<string, Option>(map((option) => [option.name, option], options));
-    this.callback = callback;
-  }
-
-  public toApiJSON(): object {
-    const options: object[] = [];
-
-    for (const option of this.optionMap.values()) {
-      options.push({
-        name: option.name,
-        description: option.description,
-        type: option.type,
-        required: option.required,
-      });
-    }
-
-    return {
-      type: CommandType.Command,
-      name: this.name,
-      description: this.description,
-      options: options,
-    };
+export class CommandParseError extends Error {
+  public constructor(message: string) {
+    super(message);
+    this.name = this.constructor.name;
   }
 }
 
-function groupToApiJsonWithType(nested: CommandGroup, type: CommandType): object {
-  const transform = pipe(
-    map((command: Command) => command.toApiJSON()),
-    arrayFrom
-  );
-
-  return {
-    type: type,
-    description: nested.description,
-    name: nested.name,
-    options: transform(nested.commandMap.values()),
-  };
-}
-
-export class CommandGroup extends CommandBase {
-  public readonly commandMap: Map<string, Command>;
-
-  public constructor(name: string, description: string, commands: Command[]) {
-    super(name, description);
-    this.commandMap = new UniqueMap<string, Command>(map((command) => [command.name, command], commands));
+export class CommandInteraction {
+  public constructor(
+    public readonly user: User,
+    public readonly channel: TextBasedChannel,
+    public readonly guild: Guild | null,
+    public readonly args: string[],
+    public readonly permissions: PermissionsBitField | null
+  ) {
+    this.user = user;
+    this.channel = channel;
+    this.guild = guild;
+    this.args = args;
+    this.permissions = permissions;
   }
 
-  public toApiJSON(): object {
-    return groupToApiJsonWithType(this, CommandType.Command);
+  public async reply(message: string | MessagePayload | MessageCreateOptions): Promise<void> {
+    await this.channel.send(message);
   }
 }
 
-export class GroupedCommandGroup extends CommandBase {
-  public readonly commandGroupMap: Map<string, CommandGroup>;
+export type CommandCallback = (interaction: CommandInteraction) => Promise<void>;
 
-  public constructor(name: string, description: string, groups: CommandGroup[]) {
-    super(name, description);
-    this.commandGroupMap = new UniqueMap<string, CommandGroup>(map((group) => [group.name, group], groups));
-  }
-
-  public toApiJSON(): object {
-    const transform = pipe(
-      map((group: CommandGroup) => groupToApiJsonWithType(group, CommandType.CommandGroup)),
-      arrayFrom
-    );
-
-    return {
-      type: CommandType.Command,
-      description: this.description,
-      name: this.name,
-      options: transform(this.commandGroupMap.values()),
-    };
-  }
-}
-
-export type CommandEntry = Command | CommandGroup | GroupedCommandGroup;
-
-export class Option {
+export class Command {
   public constructor(
     public readonly name: string,
     public readonly description: string,
-    public readonly type: CommandOptionType,
-    public readonly required = true
+    public readonly usage: string,
+    public readonly minArgs: number,
+    public readonly maxArgs: number | null,
+    public readonly callback: CommandCallback
   ) {
     this.name = name;
-    this.description = description;
-    this.required = required;
-    this.type = type;
+    this.usage = usage;
+    this.minArgs = minArgs;
+    this.maxArgs = maxArgs;
+    this.callback = callback;
   }
+
+  public formatUsage(): string {
+    return `${this.name} ${this.usage}`;
+  }
+}
+
+function parsedEscape(parser: Parser, retval: string): string {
+  parser.forward();
+  return retval;
+}
+
+function parseStringEscape(parser: Parser): string {
+  if (!parser.hasMore()) {
+    throw new CommandParseError('Unterminated string');
+  }
+
+  parser.forward();
+  const seq = parser.peek();
+
+  switch (seq) {
+    case 'n':
+      return parsedEscape(parser, '\n');
+
+    case 'r':
+      return parsedEscape(parser, '\r');
+
+    case 't':
+      return parsedEscape(parser, '\t');
+
+    case '\\':
+      return parsedEscape(parser, '\\');
+
+    case '"':
+      return parsedEscape(parser, '"');
+
+    default:
+      throw new CommandParseError(`Unknown escape sequence \\${seq}`);
+  }
+}
+
+function parseString(parser: Parser): string {
+  const parts = [];
+  parser.forward();
+
+  while (parser.hasMore()) {
+    const part = parser.takeWhile((ch) => ch !== '"' && ch !== '\\');
+    parts.push(part);
+
+    if (!parser.hasMore()) {
+      throw new CommandParseError('Unterminated string');
+    }
+
+    const ch = parser.peek();
+
+    if (ch === '"') {
+      parser.forward();
+      break;
+    }
+
+    // Can only be \\ here
+    parts.push(parseStringEscape(parser));
+  }
+
+  return parts.join('');
+}
+
+function parseBarePart(parser: Parser): string {
+  return parser.takeWhile((ch) => ch !== '"' && !/\s/.test(ch)).trim();
+}
+
+export function parseCommand(message: string): string[] {
+  const parser = new Parser(message);
+  const parts = [];
+
+  while (parser.hasMore()) {
+    parser.skipWhile((ch) => /\s/.test(ch));
+
+    if (!parser.hasMore()) {
+      break;
+    }
+
+    if (parser.peek() === '"') {
+      parts.push(parseString(parser));
+    } else {
+      const part = parseBarePart(parser);
+
+      if (part.length > 0) {
+        parts.push(part);
+      }
+    }
+  }
+
+  return parts;
 }

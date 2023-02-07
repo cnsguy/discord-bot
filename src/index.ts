@@ -5,10 +5,10 @@ import { config } from 'dotenv';
 async function main(): Promise<void> {
   config();
   const token = readEnvOrThrow('TOKEN');
-  const clientId = readEnvOrThrow('CLIENT_ID');
   const modules = readEnvOrThrow('MODULES').split(' ');
   const database = readEnvOrThrow('DATABASE');
-  const bot = await Bot.new(token, clientId, modules, database);
+  const commandPrefix = readEnvOrThrow('COMMAND_PREFIX');
+  const bot = await Bot.new(token, modules, database, commandPrefix);
   await bot.run();
 }
 

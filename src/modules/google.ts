@@ -1,7 +1,7 @@
 import { Module } from '../module';
-import { Command, Option, CommandOptionType } from '../command';
+import { Command, CommandInteraction } from '../command';
 import { Bot } from '../bot';
-import { ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
+import { EmbedBuilder } from 'discord.js';
 import { parse as parseURL } from 'url';
 import * as cheerio from 'cheerio';
 
@@ -42,12 +42,9 @@ export class GoogleModule extends Module {
   private constructor(private readonly bot: Bot) {
     super();
     this.bot = bot;
-    this.bot.registerCommandEntry(
-      new Command(
-        'google',
-        'Search the web',
-        [new Option('query', 'Search query', CommandOptionType.String)],
-        async (interaction) => this.googleCommand(interaction)
+    this.bot.registerCommand(
+      new Command('google', 'Search the web', '<query...>', 1, null, async (interaction) =>
+        this.googleCommand(interaction)
       )
     );
   }
@@ -56,16 +53,13 @@ export class GoogleModule extends Module {
     return new GoogleModule(bot);
   }
 
-  private async googleCommand(interaction: ChatInputCommandInteraction): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const query = interaction.options.get('query')!.value!.toString();
-
-    await interaction.deferReply();
+  private async googleCommand(interaction: CommandInteraction): Promise<void> {
+    const query = interaction.args.join(' ');
     const response = await fetch(`https://www.google.com/search?q=${encodeURIComponent(query)}`);
     const decoder = new TextDecoder('iso-8859-1');
 
     if (response.status != 200) {
-      await interaction.editReply(`Failed to get search results; server returned error code ${response.status}`);
+      await interaction.reply(`Failed to get search results; server returned error code ${response.status}`);
       return;
     }
 
@@ -73,7 +67,7 @@ export class GoogleModule extends Module {
     const searchResult = extractResults(html);
 
     if (searchResult === null) {
-      await interaction.editReply(`Failed to get search results`);
+      await interaction.reply(`Failed to get search results`);
       return;
     }
 
@@ -81,6 +75,6 @@ export class GoogleModule extends Module {
     embed.setTitle(searchResult.title);
     embed.setURL(searchResult.url);
     embed.setDescription(searchResult.content);
-    await interaction.editReply({ embeds: [embed] });
+    await interaction.reply({ embeds: [embed] });
   }
 }

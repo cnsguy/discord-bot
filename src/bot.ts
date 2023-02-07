@@ -1,8 +1,9 @@
-import { REST, Routes, Client, Events, ChatInputCommandInteraction, GatewayIntentBits, Message } from 'discord.js';
-import { CommandEntry, Command, CommandGroup, GroupedCommandGroup } from './command';
+import { Client, Events, GatewayIntentBits, Message } from 'discord.js';
+import { Command, CommandInteraction } from './command';
 import { ModalEntry } from './modal';
 import { Module, LoadableModule } from './module';
 import { UniqueMap } from './unique_map';
+import { parseCommand } from './command';
 import { EventEmitter } from 'events';
 import { open, Database } from 'sqlite';
 import { RSSModule } from './modules/rss';
@@ -39,14 +40,14 @@ export enum BotEventNames {
 export class Bot extends EventEmitter {
   public readonly modules = new UniqueMap<string, Module>();
   public readonly client: Client;
-  public readonly commandMap = new UniqueMap<string, CommandEntry>();
+  public readonly commandMap = new UniqueMap<string, Command>();
   public readonly modalMap = new UniqueMap<string, ModalEntry>();
 
   private constructor(
     private readonly token: string,
-    private readonly clientId: string,
     moduleNames: string[],
-    public readonly database: Database
+    public readonly database: Database,
+    private readonly commandPrefix: string
   ) {
     super();
 
@@ -60,8 +61,8 @@ export class Bot extends EventEmitter {
     });
 
     this.token = token;
-    this.clientId = clientId;
     this.database = database;
+    this.commandPrefix = commandPrefix;
 
     for (const moduleName of moduleNames) {
       console.log(`Loading module ${moduleName}`);
@@ -69,16 +70,16 @@ export class Bot extends EventEmitter {
     }
   }
 
-  public static async new(token: string, clientId: string, modules: string[], databaseName: string): Promise<Bot> {
+  public static async new(token: string, modules: string[], databaseName: string, commandPrefix: string): Promise<Bot> {
     const database = await open({
       filename: databaseName,
       driver: sqlite3.Database,
     });
 
-    return new Bot(token, clientId, modules, database);
+    return new Bot(token, modules, database, commandPrefix);
   }
 
-  public registerCommandEntry(entry: CommandEntry): void {
+  public registerCommand(entry: Command): void {
     this.commandMap.set(entry.name, entry);
   }
 
@@ -107,47 +108,65 @@ export class Bot extends EventEmitter {
     this.modules.set(moduleName, module.load(this));
   }
 
-  private async handleCommand(command: Command, interaction: ChatInputCommandInteraction): Promise<void> {
-    await command.callback(interaction);
-  }
-
-  private async handleCommandGroup(group: CommandGroup, interaction: ChatInputCommandInteraction): Promise<void> {
-    const command = group.commandMap.get(interaction.options.getSubcommand());
-
-    if (command === undefined) {
-      return;
-    }
-
-    await this.handleCommand(command, interaction);
-  }
-
-  private async handleGroupedCommandGroup(
-    group: GroupedCommandGroup,
-    interaction: ChatInputCommandInteraction
-  ): Promise<void> {
-    const interactionGroup = interaction.options.getSubcommandGroup();
-
-    if (interactionGroup === null) {
-      return;
-    }
-
-    const commandGroup = group.commandGroupMap.get(interactionGroup);
-
-    if (commandGroup === undefined) {
-      return;
-    }
-
-    await this.handleCommandGroup(commandGroup, interaction);
-  }
-
   private registerEvents(): void {
     this.client.on(Events.ClientReady, () => {
       console.log('Logged in');
       this.emit(BotEventNames.ClientReady);
     });
 
-    this.client.on(Events.MessageCreate, (message) => {
+    this.client.on(Events.MessageCreate, async (message) => {
       this.emit(BotEventNames.MessageCreate, message);
+
+      if (message.author === this.client.user) {
+        return;
+      }
+
+      const content = message.content;
+
+      if (!content.startsWith(this.commandPrefix)) {
+        return;
+      }
+
+      const commandPart = content.slice(this.commandPrefix.length);
+      let parsed;
+
+      try {
+        parsed = parseCommand(commandPart);
+      } catch (error) {
+        await message.reply(`Failed to parse command: ${String(error)}`);
+        return;
+      }
+
+      if (parsed.length === 0) {
+        return;
+      }
+
+      const commandName = parsed[0];
+      const command = this.commandMap.get(commandName);
+
+      if (command === undefined) {
+        return;
+      }
+
+      const args = parsed.slice(1);
+      const permissions = message.member?.permissions ?? null;
+      const guild = message.guild;
+
+      if (args.length < command.minArgs) {
+        await message.reply(`Too few arguments. Usage: ${command.formatUsage()}`);
+        return;
+      }
+
+      if (command.maxArgs !== null && args.length > command.maxArgs) {
+        await message.reply(`Too many arguments. Usage: ${command.formatUsage()}`);
+        return;
+      }
+
+      try {
+        await command.callback(new CommandInteraction(message.author, message.channel, guild, args, permissions));
+      } catch (error) {
+        console.warn(`Failed to run command ${commandName}: ${String(error)}`);
+      }
     });
 
     this.client.on(Events.InteractionCreate, async (interaction) => {
@@ -170,44 +189,13 @@ export class Bot extends EventEmitter {
         if (entry === undefined) {
           return;
         }
-
-        try {
-          if (entry instanceof Command) {
-            await this.handleCommand(entry, interaction);
-          } else if (entry instanceof CommandGroup) {
-            await this.handleCommandGroup(entry, interaction);
-          } else if (entry instanceof GroupedCommandGroup) {
-            await this.handleGroupedCommandGroup(entry, interaction);
-          }
-        } catch (error) {
-          if (error instanceof Error && error.stack !== undefined) {
-            console.error(`Exception while running command entry in ${entry.name}: ${error.stack}`);
-          } else {
-            console.error(`Exception while running command entry in ${entry.name}: ${String(error)}`);
-          }
-        }
       }
-    });
-  }
-
-  private async registerCommands(): Promise<void> {
-    const rest = new REST({ version: '10' }).setToken(this.token);
-    const json = [];
-
-    for (const entry of this.commandMap.values()) {
-      json.push(entry.toApiJSON());
-    }
-
-    await rest.put(Routes.applicationCommands(this.clientId), {
-      body: json,
     });
   }
 
   public async run(): Promise<void> {
     console.log('Registering events');
     this.registerEvents();
-    console.log('Registering commands');
-    await this.registerCommands();
     console.log('Logging in');
     await this.client.login(this.token);
   }

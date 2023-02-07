@@ -1,21 +1,10 @@
 import { Module } from '../module';
 import { Bot } from '../bot';
-import { Command, CommandGroup, Option, CommandOptionType } from '../command';
+import { Command, CommandInteraction } from '../command';
 import { NoteDatabase, NoteEntry } from './note/database';
-import {
-  ChatInputCommandInteraction,
-  ModalBuilder,
-  TextInputBuilder,
-  ActionRowBuilder,
-  TextInputStyle,
-  ModalSubmitInteraction,
-  EmbedBuilder,
-  TextBasedChannel,
-} from 'discord.js';
+import { EmbedBuilder, TextBasedChannel } from 'discord.js';
 import { LimitedBuffer } from '../util';
-import { ModalEntry } from '../modal';
 
-const MaxNoteLength = 500;
 const MaxNoteListMessageLength = 2000;
 
 async function sendEmbed(channel: TextBasedChannel | null, message: string): Promise<void> {
@@ -55,66 +44,57 @@ export class NoteModule extends Module {
   private readonly database: NoteDatabase;
 
   private constructor(private readonly bot: Bot) {
-    const noteAdd = new Command('add', 'Add a note to your list', [], async (interaction) =>
+    const noteAdd = new Command('note-add', 'Add a note to your list', '(<note>...)', 1, null, async (interaction) =>
       this.noteAddCommand(interaction)
     );
 
-    const noteList = new Command('list', 'List your notes', [], async (interaction) =>
+    const noteList = new Command('note-list', 'List your notes', '-', 0, 0, async (interaction) =>
       this.noteListCommand(interaction)
     );
 
     const noteDelete = new Command(
-      'delete',
+      'note-delete',
       'Delete the specified notes by IDs',
-      [new Option('ids', 'Note IDs, separated by a comma', CommandOptionType.String)],
+      '<ids...>',
+      1,
+      null,
       async (interaction) => this.noteDeleteCommand(interaction)
     );
 
     const noteSearch = new Command(
-      'search',
+      'note-search',
       'Search for a given pattern in your notes',
-      [new Option('pattern', 'Search pattern', CommandOptionType.String)],
+      '<pattern>',
+      1,
+      1,
       async (interaction) => this.noteSearchCommand(interaction)
     );
 
     super();
     this.bot = bot;
     this.database = new NoteDatabase(this.bot.database);
-    this.bot.registerCommandEntry(
-      new CommandGroup('note', 'Note commands', [noteAdd, noteList, noteDelete, noteSearch])
-    );
-    this.bot.registerModalEntry(new ModalEntry('note', async (interaction) => this.noteModalSubmit(interaction)));
+    this.bot.registerCommand(noteAdd);
+    this.bot.registerCommand(noteList);
+    this.bot.registerCommand(noteDelete);
+    this.bot.registerCommand(noteSearch);
   }
 
   public static load(bot: Bot): NoteModule {
     return new NoteModule(bot);
   }
 
-  private async noteModalSubmit(interaction: ModalSubmitInteraction): Promise<void> {
-    const note = interaction.fields.getTextInputValue('note');
-    await this.database.newEntry(note, interaction.guildId, interaction.user.id);
+  private async noteAddCommand(interaction: CommandInteraction): Promise<void> {
+    const note = interaction.args.join(' ');
+    await this.database.newEntry(note, interaction.guild?.id ?? null, interaction.user.id);
     await interaction.reply('Note added.');
   }
 
-  private async noteAddCommand(interaction: ChatInputCommandInteraction): Promise<void> {
-    const modal = new ModalBuilder().setCustomId('note').setTitle('Note');
-    const noteInput = new TextInputBuilder()
-      .setCustomId('note')
-      .setLabel('Note content')
-      .setMaxLength(MaxNoteLength)
-      .setStyle(TextInputStyle.Paragraph);
-
-    const noteRow = new ActionRowBuilder<TextInputBuilder>().addComponents(noteInput);
-    modal.addComponents([noteRow]);
-    await interaction.showModal(modal);
-  }
-
-  private async noteListCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async noteListCommand(interaction: CommandInteraction): Promise<void> {
     if (interaction.channel === null) {
       return;
     }
 
-    const entries = await this.database.getEntriesForSenderInGuild(interaction.user.id, interaction.guildId);
+    const entries = await this.database.getEntriesForSenderInGuild(interaction.user.id, interaction.guild?.id ?? null);
 
     if (entries.length === 0) {
       await interaction.reply('No notes.');
@@ -125,13 +105,12 @@ export class NoteModule extends Module {
     await listNotes(interaction.channel, entries);
   }
 
-  private async noteDeleteCommand(interaction: ChatInputCommandInteraction): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const ids = interaction.options.get('ids')!.value!.toString();
-    const entries = await this.database.getEntriesForSenderInGuild(interaction.user.id, interaction.guildId);
+  private async noteDeleteCommand(interaction: CommandInteraction): Promise<void> {
+    const ids = interaction.args;
+    const entries = await this.database.getEntriesForSenderInGuild(interaction.user.id, interaction.guild?.id ?? null);
     const selectedEntries = [];
 
-    for (const idPart of ids.split(',')) {
+    for (const idPart of ids) {
       const id = Number(idPart.trim());
 
       if (id < 1 || id > entries.length) {
@@ -150,14 +129,13 @@ export class NoteModule extends Module {
     await interaction.reply('Deleted.');
   }
 
-  private async noteSearchCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async noteSearchCommand(interaction: CommandInteraction): Promise<void> {
     if (interaction.channel === null) {
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const pattern = interaction.options.get('pattern')!.value!.toString();
-    const entries = await this.database.getEntriesForSenderInGuild(interaction.user.id, interaction.guildId);
+    const pattern = interaction.args[0];
+    const entries = await this.database.getEntriesForSenderInGuild(interaction.user.id, interaction.guild?.id ?? null);
     const filtered = entries.filter((entry) => entry.note.match(new RegExp(pattern, 'i')));
     await interaction.reply('Results:');
     await listNotes(interaction.channel, filtered);
