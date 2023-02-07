@@ -12,10 +12,6 @@ interface RawContentEntry {
   readonly quote: string;
 }
 
-interface RawContentEntryId {
-  readonly id: number;
-}
-
 class ContentEntry {
   public constructor(public readonly quote: string) {
     this.quote = quote;
