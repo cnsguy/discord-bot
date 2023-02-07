@@ -105,7 +105,7 @@ export class ReminderModule extends Module {
       'Show a reminder once on a specific date',
       '<date> <message>',
       2,
-      2,
+      null,
       async (interaction) => this.reminderOnCommand(interaction)
     );
 
@@ -114,7 +114,7 @@ export class ReminderModule extends Module {
       'Show a reminder once on a specific date (relative)',
       '<date> <message>',
       2,
-      2,
+      null,
       async (interaction) => this.reminderInCommand(interaction)
     );
 
@@ -123,7 +123,7 @@ export class ReminderModule extends Module {
       'Repeat a reminder based on an interval (relative)',
       '<interval> <message>',
       2,
-      2,
+      null,
       async (interaction) => this.reminderEachCommand(interaction)
     );
 
@@ -223,7 +223,7 @@ export class ReminderModule extends Module {
     }
 
     const date = interaction.args[0];
-    const message = interaction.args[1];
+    const message = interaction.args.slice(1).join(' ');
     const nextDate: Date | null = parseDate(date);
 
     if (nextDate === null) {
@@ -250,7 +250,7 @@ export class ReminderModule extends Module {
     }
 
     const date = interaction.args[0];
-    const message = interaction.args[1];
+    const message = interaction.args.slice(1).join(' ');
     const relativeDate = parseRelativeDate(date);
 
     if (relativeDate === null) {
@@ -278,7 +278,7 @@ export class ReminderModule extends Module {
     }
 
     const date = interaction.args[0];
-    const message = interaction.args[1];
+    const message = interaction.args.slice(1).join(' ');
     const interval = parseRelativeDate(date);
 
     if (interval === null) {
