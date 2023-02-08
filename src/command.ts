@@ -115,9 +115,9 @@ function parseBarePart(parser: Parser): string {
   return parser.takeWhile((ch) => ch !== '"' && !/\s/.test(ch)).trim();
 }
 
-export function parseCommand(message: string): string[] {
+export function parseCommandArgs(message: string): string[] {
   const parser = new Parser(message);
-  const parts = [];
+  const args = [];
 
   while (parser.hasMore()) {
     parser.skipWhile((ch) => /\s/.test(ch));
@@ -127,15 +127,15 @@ export function parseCommand(message: string): string[] {
     }
 
     if (parser.peek() === '"') {
-      parts.push(parseString(parser));
+      args.push(parseString(parser));
     } else {
       const part = parseBarePart(parser);
 
       if (part.length > 0) {
-        parts.push(part);
+        args.push(part);
       }
     }
   }
 
-  return parts;
+  return args;
 }

@@ -1,9 +1,18 @@
-import { Client, Events, GatewayIntentBits, Message } from 'discord.js';
+import {
+  Client,
+  Events,
+  GatewayIntentBits,
+  Message,
+  User,
+  Guild,
+  TextBasedChannel,
+  PermissionsBitField,
+} from 'discord.js';
 import { Command, CommandInteraction } from './command';
 import { ModalEntry } from './modal';
 import { Module, LoadableModule } from './module';
 import { UniqueMap } from './unique_map';
-import { parseCommand } from './command';
+import { parseCommandArgs } from './command';
 import { EventEmitter } from 'events';
 import { open, Database } from 'sqlite';
 import { RSSModule } from './modules/rss';
@@ -108,65 +117,84 @@ export class Bot extends EventEmitter {
     this.modules.set(moduleName, module.load(this));
   }
 
+  private matchCommand(line: string): [Command, string] | null {
+    for (const [commandName, command] of this.commandMap.entries()) {
+      const pattern = this.commandPrefix + commandName;
+
+      if (line.startsWith(pattern)) {
+        const rest = line.slice(pattern.length);
+        return [command, rest];
+      }
+    }
+
+    return null;
+  }
+
+  private async tryProcessCommandLine(
+    author: User,
+    channel: TextBasedChannel,
+    guild: Guild | null,
+    permissions: PermissionsBitField | null,
+    line: string
+  ): Promise<void> {
+    const matchResult = this.matchCommand(line);
+
+    if (matchResult === null) {
+      return;
+    }
+
+    const [command, rest] = matchResult;
+    let args;
+
+    try {
+      args = parseCommandArgs(rest);
+    } catch (error) {
+      await channel.send(`Failed to parse command arguments: ${String(error)}`);
+      return;
+    }
+
+    if (args.length < command.minArgs) {
+      await channel.send(`Too few arguments. Usage: ${command.formatUsage()}`);
+      return;
+    }
+
+    if (command.maxArgs !== null && args.length > command.maxArgs) {
+      await channel.send(`Too many arguments. Usage: ${command.formatUsage()}`);
+      return;
+    }
+
+    try {
+      await command.callback(new CommandInteraction(author, channel, guild, args, permissions));
+    } catch (error) {
+      console.warn(`Failed to run command ${command.name}: ${String(error)}`);
+    }
+  }
+
+  private async tryProcessCommands(message: Message): Promise<void> {
+    if (message.author === this.client.user) {
+      return;
+    }
+
+    for (const line of message.content.split('\n')) {
+      await this.tryProcessCommandLine(
+        message.author,
+        message.channel,
+        message.guild,
+        message.member?.permissions ?? null,
+        line
+      );
+    }
+  }
+
   private registerEvents(): void {
     this.client.on(Events.ClientReady, () => {
       console.log('Logged in');
       this.emit(BotEventNames.ClientReady);
     });
 
-    this.client.on(Events.MessageCreate, async (message) => {
+    this.client.on(Events.MessageCreate, (message) => {
       this.emit(BotEventNames.MessageCreate, message);
-
-      if (message.author === this.client.user) {
-        return;
-      }
-
-      const content = message.content;
-
-      if (!content.startsWith(this.commandPrefix)) {
-        return;
-      }
-
-      const commandPart = content.slice(this.commandPrefix.length);
-      let parsed;
-
-      try {
-        parsed = parseCommand(commandPart);
-      } catch (error) {
-        await message.reply(`Failed to parse command: ${String(error)}`);
-        return;
-      }
-
-      if (parsed.length === 0) {
-        return;
-      }
-
-      const commandName = parsed[0];
-      const command = this.commandMap.get(commandName);
-
-      if (command === undefined) {
-        return;
-      }
-
-      const args = parsed.slice(1);
-      const permissions = message.member?.permissions ?? null;
-      const guild = message.guild;
-
-      if (args.length < command.minArgs) {
-        await message.reply(`Too few arguments. Usage: ${command.formatUsage()}`);
-        return;
-      }
-
-      if (command.maxArgs !== null && args.length > command.maxArgs) {
-        await message.reply(`Too many arguments. Usage: ${command.formatUsage()}`);
-        return;
-      }
-
-      try {
-        await command.callback(new CommandInteraction(message.author, message.channel, guild, args, permissions));
-      } catch (error) {
-        console.warn(`Failed to run command ${commandName}: ${String(error)}`);
-      }
+      void this.tryProcessCommands(message);
     });
 
     this.client.on(Events.InteractionCreate, async (interaction) => {
