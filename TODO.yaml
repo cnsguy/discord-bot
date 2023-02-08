@@ -2,14 +2,12 @@
 modules:
   - google: !translate
   - google: !youtube
-  - google: rewrite !google with api
+  - duckduckgo: replace the disgusting google hackjob
   - talkbot: !sender
   - talkbot: !quote
-  - note: port in n/n+, n/nl, n/n?
   - vote: vote module
   - roll: roll a random number
-  - dns: resolve a domain name
-  - note: maybe escape markdown again
+  - dns: resolve a domain name, reverse dns lookup
   - geoiplookup: geoip lookup
 
 general:
