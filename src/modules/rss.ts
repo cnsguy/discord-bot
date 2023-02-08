@@ -16,7 +16,7 @@ export class RSSModule extends Module {
 
   private constructor(private readonly bot: Bot) {
     const rssMonitorLink = new Command(
-      'rss-monitor-link',
+      '!rss-monitor-link',
       'Monitor a link for RSS updates',
       '<link> (<title>) (<content>)',
       1,
@@ -25,7 +25,7 @@ export class RSSModule extends Module {
     );
 
     const rssMonitorList = new Command(
-      'rss-monitor-list',
+      '!rss-monitor-list',
       'List all currently monitored RSS links in the current channel',
       '-',
       0,
@@ -34,16 +34,16 @@ export class RSSModule extends Module {
     );
 
     const rssUnmonitorIds = new Command(
-      'rss-unmonitor-ids',
+      '!rss-unmonitor',
       'Delete rss entries from the database',
-      '<entries...>',
+      '<id...>',
       1,
       null,
       async (interaction) => this.rssUnmonitorIdsCommand(interaction)
     );
 
     const rssUnmonitorAll = new Command(
-      'rss-unmonitor-all',
+      '!rss-unmonitor-all',
       'Stop monitoring all links for RSS updates in the current channel',
       '-',
       0,

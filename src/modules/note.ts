@@ -44,16 +44,16 @@ export class NoteModule extends Module {
   private readonly database: NoteDatabase;
 
   private constructor(private readonly bot: Bot) {
-    const noteAdd = new Command('note-add', 'Add a note to your list', '(<note>...)', 1, null, async (interaction) =>
+    const noteAdd = new Command('n/n+', 'Add a note to your list', '(<note>...)', 1, null, async (interaction) =>
       this.noteAddCommand(interaction)
     );
 
-    const noteList = new Command('note-list', 'List your notes', '-', 0, 0, async (interaction) =>
+    const noteList = new Command('n/nl', 'List your notes', '-', 0, 0, async (interaction) =>
       this.noteListCommand(interaction)
     );
 
     const noteDelete = new Command(
-      'note-delete',
+      'n/n-',
       'Delete the specified notes by IDs',
       '<ids...>',
       1,
@@ -62,7 +62,7 @@ export class NoteModule extends Module {
     );
 
     const noteSearch = new Command(
-      'note-search',
+      'n/n?',
       'Search for a given pattern in your notes',
       '<pattern>',
       1,

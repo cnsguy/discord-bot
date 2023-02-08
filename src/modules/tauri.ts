@@ -18,7 +18,7 @@ export class TauriModule extends Module {
     super();
     this.bot = bot;
     this.bot.registerCommand(
-      new Command('tauri', 'Tauri status', '-', 0, 0, async (interaction) => this.tauriCommand(interaction))
+      new Command('!sz', 'Tauri status', '-', 0, 0, async (interaction) => this.tauriCommand(interaction))
     );
   }
 

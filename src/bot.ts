@@ -52,12 +52,7 @@ export class Bot extends EventEmitter {
   public readonly commandMap = new UniqueMap<string, Command>();
   public readonly modalMap = new UniqueMap<string, ModalEntry>();
 
-  private constructor(
-    private readonly token: string,
-    moduleNames: string[],
-    public readonly database: Database,
-    private readonly commandPrefix: string
-  ) {
+  private constructor(private readonly token: string, moduleNames: string[], public readonly database: Database) {
     super();
 
     this.client = new Client({
@@ -71,7 +66,6 @@ export class Bot extends EventEmitter {
 
     this.token = token;
     this.database = database;
-    this.commandPrefix = commandPrefix;
 
     for (const moduleName of moduleNames) {
       console.log(`Loading module ${moduleName}`);
@@ -79,17 +73,21 @@ export class Bot extends EventEmitter {
     }
   }
 
-  public static async new(token: string, modules: string[], databaseName: string, commandPrefix: string): Promise<Bot> {
+  public static async new(token: string, modules: string[], databaseName: string): Promise<Bot> {
     const database = await open({
       filename: databaseName,
       driver: sqlite3.Database,
     });
 
-    return new Bot(token, modules, database, commandPrefix);
+    return new Bot(token, modules, database);
+  }
+
+  public registerCommandWithName(name: string, entry: Command): void {
+    this.commandMap.set(name, entry);
   }
 
   public registerCommand(entry: Command): void {
-    this.commandMap.set(entry.name, entry);
+    this.registerCommandWithName(entry.name, entry);
   }
 
   public registerModalEntry(entry: ModalEntry): void {
@@ -119,10 +117,8 @@ export class Bot extends EventEmitter {
 
   private matchCommand(line: string): [Command, string] | null {
     for (const [commandName, command] of this.commandMap.entries()) {
-      const pattern = this.commandPrefix + commandName;
-
-      if (line.startsWith(pattern)) {
-        const rest = line.slice(pattern.length);
+      if (line.startsWith(commandName)) {
+        const rest = line.slice(commandName.length);
         return [command, rest];
       }
     }

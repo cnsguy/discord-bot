@@ -42,11 +42,13 @@ export class GoogleModule extends Module {
   private constructor(private readonly bot: Bot) {
     super();
     this.bot = bot;
-    this.bot.registerCommand(
-      new Command('google', 'Search the web', '<query...>', 1, null, async (interaction) =>
-        this.googleCommand(interaction)
-      )
+
+    const command = new Command('!google', 'Search the web', '<query...>', 1, null, async (interaction) =>
+      this.googleCommand(interaction)
     );
+
+    this.bot.registerCommandWithName('!g', command);
+    this.bot.registerCommand(command);
   }
 
   public static load(bot: Bot): GoogleModule {

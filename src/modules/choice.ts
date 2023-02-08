@@ -4,16 +4,12 @@ import { Command, CommandInteraction } from '../command';
 
 export class ChoiceModule extends Module {
   private constructor(bot: Bot) {
-    const choice = new Command(
-      'choice',
-      'Random choice between the listed options',
-      '<choices...>',
-      1,
-      null,
-      async (interaction) => this.choiceCommand(interaction)
+    bot.registerCommand(
+      new Command('!choice', 'Random choice between the listed options', '<choices...>', 1, null, async (interaction) =>
+        this.choiceCommand(interaction)
+      )
     );
 
-    bot.registerCommand(choice);
     super();
   }
 

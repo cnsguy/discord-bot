@@ -101,7 +101,7 @@ export class ReminderModule extends Module {
 
   private constructor(private readonly bot: Bot) {
     const reminderOn = new Command(
-      'reminder-on',
+      '!date-on',
       'Show a reminder once on a specific date',
       '<date> <message>',
       2,
@@ -110,7 +110,7 @@ export class ReminderModule extends Module {
     );
 
     const reminderIn = new Command(
-      'reminder-in',
+      '!date',
       'Show a reminder once on a specific date (relative)',
       '<date> <message>',
       2,
@@ -119,7 +119,7 @@ export class ReminderModule extends Module {
     );
 
     const reminderEach = new Command(
-      'reminder-each',
+      '!date-repeat',
       'Repeat a reminder based on an interval (relative)',
       '<interval> <message>',
       2,
@@ -128,7 +128,7 @@ export class ReminderModule extends Module {
     );
 
     const reminderList = new Command(
-      'reminder-list',
+      '!date-list',
       'List all reminders in your current server',
       '-',
       0,
@@ -137,7 +137,7 @@ export class ReminderModule extends Module {
     );
 
     const reminderAdminList = new Command(
-      'reminder-admin-list',
+      '!date-admin-list',
       'List all reminders in the current server for a given user',
       '<user>',
       1,
@@ -146,7 +146,7 @@ export class ReminderModule extends Module {
     );
 
     const reminderDelete = new Command(
-      'reminder-delete',
+      '!date-delete',
       'Delete the specified reminders by ID',
       '<ids...>',
       1,
@@ -155,7 +155,7 @@ export class ReminderModule extends Module {
     );
 
     const reminderAdminDelete = new Command(
-      'reminder-admin-delete',
+      '!date-admin-delete',
       'Delete the specified reminders by ID for a given user',
       '<user> <ids...>',
       2,

@@ -4,8 +4,8 @@ import { Bot } from '../bot';
 import { EmbedBuilder } from 'discord.js';
 import { map, joinWith, stringFrom, pipe } from 'iter-tools';
 
-function formatCommandHelp(command: Command): string {
-  return `**${command.name}**: ${command.description}`;
+function formatCommandHelp(name: string, command: Command): string {
+  return `**${name}**: ${command.description}`;
 }
 
 export class HelpModule extends Module {
@@ -13,7 +13,7 @@ export class HelpModule extends Module {
     super();
     this.bot = bot;
     this.bot.registerCommand(
-      new Command('help', 'Get help', '-', 0, 0, async (interaction) => this.helpCommand(interaction))
+      new Command('!mhelp', 'Get help', '-', 0, 0, async (interaction) => this.helpCommand(interaction))
     );
   }
 
@@ -23,12 +23,12 @@ export class HelpModule extends Module {
 
   private async helpCommand(interaction: CommandInteraction): Promise<void> {
     const makeHelpText = pipe(
-      map((entry: Command) => formatCommandHelp(entry)),
+      map((entry: [string, Command]) => formatCommandHelp(entry[0], entry[1])),
       joinWith('\n'),
       stringFrom
     );
 
-    const helpText = makeHelpText(this.bot.commandMap.values());
+    const helpText = makeHelpText(this.bot.commandMap.entries());
     const embed = new EmbedBuilder().setDescription(helpText);
     await interaction.reply({ embeds: [embed] });
   }
