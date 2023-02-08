@@ -89,7 +89,8 @@ function parseString(parser: Parser): string {
   const parts = [];
   parser.forward();
 
-  while (parser.hasMore()) {
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
     const part = parser.takeWhile((ch) => ch !== '"' && ch !== '\\');
     parts.push(part);
 
@@ -112,7 +113,7 @@ function parseString(parser: Parser): string {
 }
 
 function parseBarePart(parser: Parser): string {
-  return parser.takeWhile((ch) => ch !== '"' && !/\s/.test(ch)).trim();
+  return parser.takeWhile((ch) => ch !== '"').trim();
 }
 
 export function parseCommandArgs(message: string): string[] {
@@ -120,12 +121,6 @@ export function parseCommandArgs(message: string): string[] {
   const args = [];
 
   while (parser.hasMore()) {
-    parser.skipWhile((ch) => /\s/.test(ch));
-
-    if (!parser.hasMore()) {
-      break;
-    }
-
     if (parser.peek() === '"') {
       args.push(parseString(parser));
     } else {

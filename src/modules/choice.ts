@@ -18,7 +18,6 @@ export class ChoiceModule extends Module {
   }
 
   private async choiceCommand(interaction: CommandInteraction): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const choices = interaction.args;
     const index = Math.floor(Math.random() * choices.length);
     await interaction.reply(choices[index]);

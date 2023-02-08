@@ -27,7 +27,6 @@ export class TauriModule extends Module {
   }
 
   private async tauriCommand(interaction: CommandInteraction): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const response = await fetch('https://tauriwow.com/files/serverstatus_json.php');
 
     if (response.status != 200) {
