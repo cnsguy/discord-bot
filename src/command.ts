@@ -105,7 +105,7 @@ function parseString(parser: Parser): string {
       break;
     }
 
-    // Can only be \\ here
+    // Can only be \ here
     parts.push(parseStringEscape(parser));
   }
 
