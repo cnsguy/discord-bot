@@ -56,64 +56,42 @@ function parsedEscape(parser: Parser, retval: string): string {
   return retval;
 }
 
-function parseStringEscape(parser: Parser): string {
+function parseEscape(parser: Parser): string {
   if (!parser.hasMore()) {
     throw new CommandParseError('Unterminated string');
   }
 
   parser.forward();
-  const seq = parser.peek();
+  const next = parser.peek();
 
-  switch (seq) {
-    case 'n':
-      return parsedEscape(parser, '\n');
-
-    case 'r':
-      return parsedEscape(parser, '\r');
-
-    case 't':
-      return parsedEscape(parser, '\t');
+  switch (next) {
+    case '|':
+      return parsedEscape(parser, '|');
 
     case '\\':
       return parsedEscape(parser, '\\');
 
-    case '"':
-      return parsedEscape(parser, '"');
-
     default:
-      throw new CommandParseError(`Unknown escape sequence \\${seq}`);
+      return parsedEscape(parser, next);
   }
 }
 
-function parseString(parser: Parser): string {
-  const parts = [];
-  parser.forward();
+function parsePart(parser: Parser): string {
+  const part = [];
 
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const part = parser.takeWhile((ch) => ch !== '"' && ch !== '\\');
-    parts.push(part);
+  while (parser.hasMore()) {
+    const barePart = parser.takeWhile((ch) => ch !== '|' && ch !== '\\');
+    part.push(barePart);
 
-    if (!parser.hasMore()) {
-      throw new CommandParseError('Unterminated string');
+    if (parser.peek() === '\\') {
+      part.push(parseEscape(parser));
+      continue;
     }
 
-    const ch = parser.peek();
-
-    if (ch === '"') {
-      parser.forward();
-      break;
-    }
-
-    // Can only be \ here
-    parts.push(parseStringEscape(parser));
+    break;
   }
 
-  return parts.join('');
-}
-
-function parseBarePart(parser: Parser): string {
-  return parser.takeWhile((ch) => ch !== '"').trim();
+  return part.join('');
 }
 
 export function parseCommandArgs(message: string): string[] {
@@ -121,15 +99,18 @@ export function parseCommandArgs(message: string): string[] {
   const args = [];
 
   while (parser.hasMore()) {
-    if (parser.peek() === '"') {
-      args.push(parseString(parser));
-    } else {
-      const part = parseBarePart(parser);
+    const arg = parsePart(parser).trim();
 
-      if (part.length > 0) {
-        args.push(part);
-      }
+    if (arg.length > 0) {
+      args.push(arg);
     }
+
+    if (parser.peek() == '|') {
+      parser.forward();
+      continue;
+    }
+
+    break;
   }
 
   return args;
