@@ -45,7 +45,7 @@ export class NoteModule extends Module {
 
   private constructor(private readonly bot: Bot) {
     bot.registerCommand(
-      new Command('n/n+', 'Add a note to your list', '(<note>...)', 1, 1, async (interaction) =>
+      new Command('n/n+', 'Add a note to your list', '<note>', 1, 1, async (interaction) =>
         this.noteAddCommand(interaction)
       )
     );
