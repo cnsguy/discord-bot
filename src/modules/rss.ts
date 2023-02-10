@@ -15,51 +15,48 @@ export class RSSModule extends Module {
   private readonly database: RSSDatabase;
 
   private constructor(private readonly bot: Bot) {
-    const rssMonitorLink = new Command(
-      '!rss-monitor-link',
-      'Monitor a link for RSS updates',
-      '<link> (<title>) (<content>)',
-      1,
-      3,
-      async (interaction) => this.rssMonitorLinkCommand(interaction)
+    bot.registerCommand(
+      new Command(
+        '!rss-monitor-link',
+        'Monitor a link for RSS updates',
+        '<link> (<title>) (<content>)',
+        1,
+        3,
+        async (interaction) => this.rssMonitorLinkCommand(interaction)
+      )
     );
 
-    const rssMonitorList = new Command(
-      '!rss-monitor-list',
-      'List all currently monitored RSS links in the current channel',
-      '-',
-      0,
-      0,
-      async (interaction) => this.rssMonitorListCommand(interaction)
+    bot.registerCommand(
+      new Command(
+        '!rss-monitor-list',
+        'List all currently monitored RSS links in the current channel',
+        '-',
+        0,
+        0,
+        async (interaction) => this.rssMonitorListCommand(interaction)
+      )
     );
 
-    const rssUnmonitorIds = new Command(
-      '!rss-unmonitor',
-      'Delete rss entries from the database',
-      '<id...>',
-      1,
-      null,
-      async (interaction) => this.rssUnmonitorIdsCommand(interaction)
+    bot.registerCommand(
+      new Command('!rss-unmonitor', 'Delete rss entries from the database', '<id...>', 1, null, async (interaction) =>
+        this.rssUnmonitorIdsCommand(interaction)
+      )
     );
 
-    const rssUnmonitorAll = new Command(
-      '!rss-unmonitor-all',
-      'Stop monitoring all links for RSS updates in the current channel',
-      '-',
-      0,
-      0,
-      async (interaction) => this.rssUnmonitorAllCommand(interaction)
+    bot.registerCommand(
+      new Command(
+        '!rss-unmonitor-all',
+        'Stop monitoring all links for RSS updates in the current channel',
+        '-',
+        0,
+        0,
+        async (interaction) => this.rssUnmonitorAllCommand(interaction)
+      )
     );
 
     super();
     this.bot = bot;
     this.database = new RSSDatabase(this.bot.database);
-
-    this.bot.registerCommand(rssMonitorLink);
-    this.bot.registerCommand(rssMonitorList);
-    this.bot.registerCommand(rssUnmonitorIds);
-    this.bot.registerCommand(rssUnmonitorAll);
-
     setInterval(() => void this.timerTick(), 30000);
   }
 

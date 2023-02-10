@@ -43,7 +43,7 @@ export class GoogleModule extends Module {
     super();
     this.bot = bot;
 
-    const command = new Command('!google', 'Search the web', '<query...>', 1, null, async (interaction) =>
+    const command = new Command('!google', 'Search the web', '<query...>', 1, 1, async (interaction) =>
       this.googleCommand(interaction)
     );
 
@@ -56,7 +56,7 @@ export class GoogleModule extends Module {
   }
 
   private async googleCommand(interaction: CommandInteraction): Promise<void> {
-    const query = interaction.args.join(' ');
+    const query = interaction.args[0];
     const response = await fetch(`https://www.google.com/search?q=${encodeURIComponent(query)}`);
     const decoder = new TextDecoder('iso-8859-1');
 

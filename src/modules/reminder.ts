@@ -100,76 +100,72 @@ export class ReminderModule extends Module {
   private readonly database: ReminderDatabase;
 
   private constructor(private readonly bot: Bot) {
-    const reminderOn = new Command(
-      '!date-on',
-      'Show a reminder once on a specific date',
-      '<date> <message>',
-      2,
-      null,
-      async (interaction) => this.reminderOnCommand(interaction)
+    bot.registerCommand(
+      new Command(
+        '!date-on',
+        'Show a reminder once on a specific date',
+        '<date> <message>',
+        2,
+        null,
+        async (interaction) => this.reminderOnCommand(interaction)
+      )
     );
 
-    const reminderIn = new Command(
-      '!date',
-      'Show a reminder once on a specific date (relative)',
-      '<date> <message>',
-      2,
-      null,
-      async (interaction) => this.reminderInCommand(interaction)
+    bot.registerCommand(
+      new Command(
+        '!date',
+        'Show a reminder once on a specific date (relative)',
+        '<date> <message>',
+        2,
+        null,
+        async (interaction) => this.reminderInCommand(interaction)
+      )
     );
 
-    const reminderEach = new Command(
-      '!date-repeat',
-      'Repeat a reminder based on an interval (relative)',
-      '<interval> <message>',
-      2,
-      null,
-      async (interaction) => this.reminderEachCommand(interaction)
+    bot.registerCommand(
+      new Command(
+        '!date-repeat',
+        'Repeat a reminder based on an interval (relative)',
+        '<interval> <message>',
+        2,
+        null,
+        async (interaction) => this.reminderEachCommand(interaction)
+      )
     );
 
-    const reminderList = new Command(
-      '!date-list',
-      'List all reminders in your current server',
-      '-',
-      0,
-      0,
-      async (interaction) => this.reminderListCommand(interaction)
+    bot.registerCommand(
+      new Command('!date-list', 'List all reminders in your current server', '-', 0, 0, async (interaction) =>
+        this.reminderListCommand(interaction)
+      )
     );
 
-    const reminderAdminList = new Command(
-      '!date-admin-list',
-      'List all reminders in the current server for a given user',
-      '<user>',
-      1,
-      1,
-      async (interaction) => this.reminderAdminListCommand(interaction)
+    bot.registerCommand(
+      new Command(
+        '!date-admin-list',
+        'List all reminders in the current server for a given user',
+        '<user>',
+        1,
+        1,
+        async (interaction) => this.reminderAdminListCommand(interaction)
+      )
     );
 
-    const reminderDelete = new Command(
-      '!date-delete',
-      'Delete the specified reminders by ID',
-      '<ids...>',
-      1,
-      null,
-      async (interaction) => this.reminderDeleteCommand(interaction)
+    bot.registerCommand(
+      new Command('!date-delete', 'Delete the specified reminders by ID', '<ids...>', 1, null, async (interaction) =>
+        this.reminderDeleteCommand(interaction)
+      )
     );
 
-    const reminderAdminDelete = new Command(
-      '!date-admin-delete',
-      'Delete the specified reminders by ID for a given user',
-      '<user> <ids...>',
-      2,
-      null,
-      async (interaction) => this.reminderAdminDeleteCommand(interaction)
+    bot.registerCommand(
+      new Command(
+        '!date-admin-delete',
+        'Delete the specified reminders by ID for a given user',
+        '<user> <ids...>',
+        2,
+        null,
+        async (interaction) => this.reminderAdminDeleteCommand(interaction)
+      )
     );
-
-    bot.registerCommand(reminderOn);
-    bot.registerCommand(reminderIn);
-    bot.registerCommand(reminderEach);
-    bot.registerCommand(reminderList);
-    bot.registerCommand(reminderAdminList);
-    bot.registerCommand(reminderDelete);
-    bot.registerCommand(reminderAdminDelete);
 
     super();
     this.bot = bot;

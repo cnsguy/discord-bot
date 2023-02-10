@@ -44,39 +44,31 @@ export class NoteModule extends Module {
   private readonly database: NoteDatabase;
 
   private constructor(private readonly bot: Bot) {
-    const noteAdd = new Command('n/n+', 'Add a note to your list', '(<note>...)', 1, null, async (interaction) =>
-      this.noteAddCommand(interaction)
+    bot.registerCommand(
+      new Command('n/n+', 'Add a note to your list', '(<note>...)', 1, 1, async (interaction) =>
+        this.noteAddCommand(interaction)
+      )
     );
 
-    const noteList = new Command('n/nl', 'List your notes', '-', 0, 0, async (interaction) =>
-      this.noteListCommand(interaction)
+    bot.registerCommand(
+      new Command('n/nl', 'List your notes', '-', 0, 0, async (interaction) => this.noteListCommand(interaction))
     );
 
-    const noteDelete = new Command(
-      'n/n-',
-      'Delete the specified notes by IDs',
-      '<ids...>',
-      1,
-      null,
-      async (interaction) => this.noteDeleteCommand(interaction)
+    bot.registerCommand(
+      new Command('n/n-', 'Delete the specified notes by IDs', '<ids...>', 1, null, async (interaction) =>
+        this.noteDeleteCommand(interaction)
+      )
     );
 
-    const noteSearch = new Command(
-      'n/n?',
-      'Search for a given pattern in your notes',
-      '<pattern>',
-      1,
-      1,
-      async (interaction) => this.noteSearchCommand(interaction)
+    bot.registerCommand(
+      new Command('n/n?', 'Search for a given pattern in your notes', '<pattern>', 1, 1, async (interaction) =>
+        this.noteSearchCommand(interaction)
+      )
     );
 
     super();
     this.bot = bot;
     this.database = new NoteDatabase(this.bot.database);
-    this.bot.registerCommand(noteAdd);
-    this.bot.registerCommand(noteList);
-    this.bot.registerCommand(noteDelete);
-    this.bot.registerCommand(noteSearch);
   }
 
   public static load(bot: Bot): NoteModule {
@@ -84,7 +76,7 @@ export class NoteModule extends Module {
   }
 
   private async noteAddCommand(interaction: CommandInteraction): Promise<void> {
-    const note = interaction.args.join(' ');
+    const note = interaction.args[0];
     await this.database.newEntry(note, interaction.guild?.id ?? null, interaction.user.id);
     await interaction.reply('Note added.');
   }
