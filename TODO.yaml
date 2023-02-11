@@ -2,7 +2,6 @@
 modules:
   - google: !translate
   - google: !youtube
-  - duckduckgo: replace the disgusting google hackjob
   - talkbot: !sender
   - talkbot: !quote
   - vote: vote module

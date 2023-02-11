@@ -21,8 +21,8 @@ import { HelpModule } from './modules/help';
 import { ReminderModule } from './modules/reminder';
 import { ChoiceModule } from './modules/choice';
 import { NoteModule } from './modules/note';
-import { GoogleModule } from './modules/google';
 import { TauriModule } from './modules/tauri';
+import { DuckDuckGoModule } from './modules/duckduckgo';
 import sqlite3 from 'sqlite3';
 
 export class BotModuleLoadError extends Error {
@@ -102,8 +102,8 @@ export class Bot extends EventEmitter {
       ['reminder']: ReminderModule,
       ['choice']: ChoiceModule,
       ['note']: NoteModule,
-      ['google']: GoogleModule,
       ['tauri']: TauriModule,
+      ['duckduckgo']: DuckDuckGoModule,
     };
 
     const module = moduleNameMap[moduleName];
