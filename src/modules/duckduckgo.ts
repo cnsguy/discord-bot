@@ -37,14 +37,14 @@ function extractResults(html: string): SearchResult[] {
 export class DuckDuckGoModule extends Module {
   private constructor(private readonly bot: Bot) {
     super();
-    this.bot = bot;
 
-    const command = new Command('!ddg', 'Search the web (with duckduckgo)', '<query>', 1, 1, async (interaction) =>
-      this.ddgCommand(interaction)
+    bot.registerCommand(
+      new Command('!g', 'Search the web (with duckduckgo)', '<query>', 1, 1, async (interaction) =>
+        this.ddgCommand(interaction)
+      )
     );
 
-    this.bot.registerCommandWithName('?', command);
-    this.bot.registerCommand(command);
+    this.bot = bot;
   }
 
   public static load(bot: Bot): DuckDuckGoModule {
