@@ -54,7 +54,7 @@ export class DuckDuckGoModule extends Module {
   private async ddgCommand(interaction: CommandInteraction): Promise<void> {
     const query = interaction.args[0];
     const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`);
-    const decoder = new TextDecoder('iso-8859-1');
+    const decoder = new TextDecoder('utf-8');
 
     if (response.status != 200) {
       await interaction.reply(`Failed to get search results; server returned error code ${response.status}`);
