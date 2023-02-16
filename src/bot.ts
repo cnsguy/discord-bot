@@ -116,9 +116,17 @@ export class Bot extends EventEmitter {
   }
 
   private matchCommand(line: string): [Command, string] | null {
+    const split = line.split(' ');
+
+    if (split.length === 0) {
+      return null;
+    }
+
+    const possibleCommand = split[0];
+
     for (const [commandName, command] of this.commandMap.entries()) {
-      if (line.startsWith(commandName)) {
-        const rest = line.slice(commandName.length);
+      if (possibleCommand === commandName) {
+        const rest = split.slice(1).join(' ');
         return [command, rest];
       }
     }
@@ -184,7 +192,6 @@ export class Bot extends EventEmitter {
 
   private registerEvents(): void {
     this.client.on(Events.ClientReady, () => {
-      console.log('Logged in');
       this.emit(BotEventNames.ClientReady);
     });
 
