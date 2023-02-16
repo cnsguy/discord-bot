@@ -38,12 +38,17 @@ export class DuckDuckGoModule extends Module {
   private constructor(private readonly bot: Bot) {
     super();
 
-    bot.registerCommand(
-      new Command('!g', 'Search the web (with duckduckgo)', '<query>', 1, 1, async (interaction) =>
-        this.ddgCommand(interaction)
-      )
+    const duckduckgoCommand = new Command(
+      '!g',
+      'Search the web (with duckduckgo)',
+      '<query>',
+      1,
+      1,
+      async (interaction) => this.ddgCommand(interaction)
     );
 
+    bot.registerCommand(duckduckgoCommand);
+    bot.registerCommandWithName('?', duckduckgoCommand);
     this.bot = bot;
   }
 
