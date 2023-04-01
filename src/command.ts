@@ -51,55 +51,12 @@ export class Command {
   }
 }
 
-function parsedEscape(parser: Parser, retval: string): string {
-  parser.forward();
-  return retval;
-}
-
-function parseEscape(parser: Parser): string {
-  if (!parser.hasMore()) {
-    throw new CommandParseError('Unterminated string');
-  }
-
-  parser.forward();
-  const next = parser.peek();
-
-  switch (next) {
-    case '|':
-      return parsedEscape(parser, '|');
-
-    case '\\':
-      return parsedEscape(parser, '\\');
-
-    default:
-      return parsedEscape(parser, next);
-  }
-}
-
-function parsePart(parser: Parser): string {
-  const part = [];
-
-  while (parser.hasMore()) {
-    const barePart = parser.takeWhile((ch) => ch !== '|' && ch !== '\\');
-    part.push(barePart);
-
-    if (parser.peek() === '\\') {
-      part.push(parseEscape(parser));
-      continue;
-    }
-
-    break;
-  }
-
-  return part.join('');
-}
-
 export function parseCommandArgs(message: string): string[] {
   const parser = new Parser(message);
   const args = [];
 
   while (parser.hasMore()) {
-    const arg = parsePart(parser).trim();
+    const arg = parser.takeWhile((ch) => ch !== '|').trim();
 
     if (arg.length > 0) {
       args.push(arg);
