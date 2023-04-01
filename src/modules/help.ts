@@ -13,7 +13,7 @@ export class HelpModule extends Module {
     super();
     this.bot = bot;
     this.bot.registerCommand(
-      new Command('!mhelp', 'Get help', '-', 0, 0, async (interaction) => this.helpCommand(interaction))
+      new Command('!help', 'Get help', '-', 0, 0, async (interaction) => this.helpCommand(interaction))
     );
   }
 
