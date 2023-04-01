@@ -2,7 +2,7 @@ import { Module } from '../module';
 import { Bot } from '../bot';
 import { Command, CommandInteraction } from '../command';
 import { EmbedBuilder } from 'discord.js';
-import { ReminderDatabase } from './reminder/database';
+import { DateDatabase } from './date/database';
 import { splitEvery } from 'ramda';
 import { parseDate } from 'chrono-node';
 import { formatDistanceStrict } from 'date-fns';
@@ -96,8 +96,8 @@ function parseRelativeDate(input: string): Date | null {
   return date;
 }
 
-export class ReminderModule extends Module {
-  private readonly database: ReminderDatabase;
+export class DateModule extends Module {
+  private readonly database: DateDatabase;
 
   private constructor(private readonly bot: Bot) {
     bot.registerCommand(
@@ -107,7 +107,7 @@ export class ReminderModule extends Module {
         '<date> <message>',
         2,
         null,
-        async (interaction) => this.reminderOnCommand(interaction)
+        async (interaction) => this.dateOnCommand(interaction)
       )
     );
 
@@ -118,7 +118,7 @@ export class ReminderModule extends Module {
         '<date> <message>',
         2,
         null,
-        async (interaction) => this.reminderInCommand(interaction)
+        async (interaction) => this.dateCommand(interaction)
       )
     );
 
@@ -129,13 +129,13 @@ export class ReminderModule extends Module {
         '<interval> <message>',
         2,
         null,
-        async (interaction) => this.reminderEachCommand(interaction)
+        async (interaction) => this.dateRepeatCommand(interaction)
       )
     );
 
     bot.registerCommand(
       new Command('!date-list', 'List all reminders in your current server', '-', 0, 0, async (interaction) =>
-        this.reminderListCommand(interaction)
+        this.dateListCommand(interaction)
       )
     );
 
@@ -146,13 +146,13 @@ export class ReminderModule extends Module {
         '<user>',
         1,
         1,
-        async (interaction) => this.reminderAdminListCommand(interaction)
+        async (interaction) => this.dateAdminListCommand(interaction)
       )
     );
 
     bot.registerCommand(
       new Command('!date-delete', 'Delete the specified reminders by ID', '<ids...>', 1, null, async (interaction) =>
-        this.reminderDeleteCommand(interaction)
+        this.dateDeleteCommand(interaction)
       )
     );
 
@@ -163,18 +163,18 @@ export class ReminderModule extends Module {
         '<user> <ids...>',
         2,
         null,
-        async (interaction) => this.reminderAdminDeleteCommand(interaction)
+        async (interaction) => this.dateAdminDeleteCommand(interaction)
       )
     );
 
     super();
     this.bot = bot;
-    this.database = new ReminderDatabase(this.bot.database);
+    this.database = new DateDatabase(this.bot.database);
     setInterval(() => void this.timerTick(), 1000);
   }
 
-  public static load(bot: Bot): ReminderModule {
-    return new ReminderModule(bot);
+  public static load(bot: Bot): DateModule {
+    return new DateModule(bot);
   }
 
   private async timerTick(): Promise<void> {
@@ -212,7 +212,7 @@ export class ReminderModule extends Module {
     return entries.length >= 10;
   }
 
-  private async reminderOnCommand(interaction: CommandInteraction): Promise<void> {
+  private async dateOnCommand(interaction: CommandInteraction): Promise<void> {
     if (await this.checkUserNoteLimit(interaction)) {
       await interaction.reply('You have too many reminders on this server.');
       return;
@@ -239,7 +239,7 @@ export class ReminderModule extends Module {
     await interaction.reply('Reminder set.');
   }
 
-  private async reminderInCommand(interaction: CommandInteraction): Promise<void> {
+  private async dateCommand(interaction: CommandInteraction): Promise<void> {
     if (await this.checkUserNoteLimit(interaction)) {
       await interaction.reply('You have too many reminders on this server.');
       return;
@@ -267,7 +267,7 @@ export class ReminderModule extends Module {
     await interaction.reply('Reminder set.');
   }
 
-  private async reminderEachCommand(interaction: CommandInteraction): Promise<void> {
+  private async dateRepeatCommand(interaction: CommandInteraction): Promise<void> {
     if (await this.checkUserNoteLimit(interaction)) {
       await interaction.reply('You have too many reminders on this server.');
       return;
@@ -322,11 +322,11 @@ export class ReminderModule extends Module {
     await interaction.reply({ embeds: embeds });
   }
 
-  private async reminderListCommand(interaction: CommandInteraction): Promise<void> {
+  private async dateListCommand(interaction: CommandInteraction): Promise<void> {
     return this.reminderList(interaction, interaction.user.id);
   }
 
-  private async reminderAdminListCommand(interaction: CommandInteraction): Promise<void> {
+  private async dateAdminListCommand(interaction: CommandInteraction): Promise<void> {
     if (!(await checkInteractionPermissions(interaction, [ManageGuild]))) {
       return;
     }
@@ -364,11 +364,11 @@ export class ReminderModule extends Module {
     await interaction.reply('Deleted.');
   }
 
-  private async reminderDeleteCommand(interaction: CommandInteraction): Promise<void> {
+  private async dateDeleteCommand(interaction: CommandInteraction): Promise<void> {
     return this.reminderDelete(interaction, interaction.user.id, interaction.args);
   }
 
-  private async reminderAdminDeleteCommand(interaction: CommandInteraction): Promise<void> {
+  private async dateAdminDeleteCommand(interaction: CommandInteraction): Promise<void> {
     if (!(await checkInteractionPermissions(interaction, [ManageGuild]))) {
       return;
     }

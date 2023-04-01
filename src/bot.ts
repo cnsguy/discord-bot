@@ -18,7 +18,7 @@ import { open, Database } from 'sqlite';
 import { RSSModule } from './modules/rss';
 import { TalkbotModule } from './modules/talkbot';
 import { HelpModule } from './modules/help';
-import { ReminderModule } from './modules/reminder';
+import { DateModule } from './modules/date';
 import { ChoiceModule } from './modules/choice';
 import { NoteModule } from './modules/note';
 import { TauriModule } from './modules/tauri';
@@ -95,7 +95,7 @@ export class Bot extends EventEmitter {
       ['rss']: RSSModule,
       ['talkbot']: TalkbotModule,
       ['help']: HelpModule,
-      ['reminder']: ReminderModule,
+      ['date']: DateModule,
       ['choice']: ChoiceModule,
       ['note']: NoteModule,
       ['tauri']: TauriModule,

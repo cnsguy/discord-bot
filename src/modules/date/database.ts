@@ -1,13 +1,13 @@
 import { Database } from 'sqlite';
 
-export class ReminderDatabaseError extends Error {
+export class DateDatabaseError extends Error {
   public constructor(message: string) {
     super(message);
     this.name = this.constructor.name;
   }
 }
 
-interface RawReminderEntry {
+interface RawDateEntry {
   readonly id: number;
   readonly messageContent: string;
   readonly guildId: string | null;
@@ -17,7 +17,7 @@ interface RawReminderEntry {
   readonly repeatInterval: string | null;
 }
 
-class ReminderEntry {
+class DateEntry {
   public constructor(
     public readonly id: number,
     public readonly messageContent: string,
@@ -44,16 +44,16 @@ class ReminderEntry {
 
   public async setNextDate(date: Date): Promise<void> {
     this.innerNextDate = date;
-    await this.database.run('UPDATE reminder SET nextDate = ? WHERE id = ?', this.nextDate.toISOString(), this.id);
+    await this.database.run('UPDATE date SET nextDate = ? WHERE id = ?', this.nextDate.toISOString(), this.id);
   }
 
   public async delete(): Promise<void> {
-    await this.database.run('DELETE FROM reminder WHERE id = ?', this.id);
+    await this.database.run('DELETE FROM date WHERE id = ?', this.id);
   }
 }
 
-function processRawReminderEntry(database: Database, entry: RawReminderEntry): ReminderEntry {
-  return new ReminderEntry(
+function processRawDateEntry(database: Database, entry: RawDateEntry): DateEntry {
+  return new DateEntry(
     entry.id,
     entry.messageContent,
     entry.guildId,
@@ -65,7 +65,7 @@ function processRawReminderEntry(database: Database, entry: RawReminderEntry): R
   );
 }
 
-export class ReminderDatabase {
+export class DateDatabase {
   public constructor(private readonly database: Database) {
     this.database = database;
   }
@@ -79,7 +79,7 @@ export class ReminderDatabase {
     repeatInterval: Date | null
   ): Promise<void> {
     await this.database.run(
-      'INSERT INTO reminder (messageContent, guildId, channelId, senderId, nextDate, repeatInterval) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO date (messageContent, guildId, channelId, senderId, nextDate, repeatInterval) VALUES (?, ?, ?, ?, ?, ?)',
       messageContent,
       guildId,
       channelId,
@@ -89,18 +89,18 @@ export class ReminderDatabase {
     );
   }
 
-  public async getEntries(): Promise<ReminderEntry[]> {
-    const raws: RawReminderEntry[] = await this.database.all('SELECT * FROM reminder');
-    return raws.map((entry) => processRawReminderEntry(this.database, entry));
+  public async getEntries(): Promise<DateEntry[]> {
+    const raws: RawDateEntry[] = await this.database.all('SELECT * FROM date');
+    return raws.map((entry) => processRawDateEntry(this.database, entry));
   }
 
-  public async getEntriesForSenderInGuild(senderId: string, guildId: string | null): Promise<ReminderEntry[]> {
-    const raws: RawReminderEntry[] = await this.database.all(
-      'SELECT * FROM reminder WHERE senderId = ? AND guildId IS ?',
+  public async getEntriesForSenderInGuild(senderId: string, guildId: string | null): Promise<DateEntry[]> {
+    const raws: RawDateEntry[] = await this.database.all(
+      'SELECT * FROM date WHERE senderId = ? AND guildId IS ?',
       senderId,
       guildId
     );
 
-    return raws.map((entry) => processRawReminderEntry(this.database, entry));
+    return raws.map((entry) => processRawDateEntry(this.database, entry));
   }
 }

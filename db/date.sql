@@ -1,4 +1,4 @@
-CREATE TABLE reminder (
+CREATE TABLE date (
   id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   messageContent TEXT NOT NULL,
   guildId TEXT,
