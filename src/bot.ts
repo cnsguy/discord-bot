@@ -113,15 +113,14 @@ export class Bot extends EventEmitter {
     }
 
     const possibleCommand = split[0];
+    const command = this.commandMap.get(possibleCommand);
 
-    for (const [commandName, command] of this.commandMap.entries()) {
-      if (possibleCommand === commandName) {
-        const rest = split.slice(1).join(' ');
-        return [command, rest];
-      }
+    if (command === undefined) {
+      return null;
     }
 
-    return null;
+    const rest = split.slice(1).join(' ');
+    return [command, rest];
   }
 
   private async tryProcessCommandLine(
