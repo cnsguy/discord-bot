@@ -9,7 +9,6 @@ import {
   PermissionsBitField,
 } from 'discord.js';
 import { Command, CommandInteraction } from './command';
-import { ModalEntry } from './modal';
 import { Module, LoadableModule } from './module';
 import { UniqueMap } from './unique_map';
 import { parseCommandArgs } from './command';
@@ -50,7 +49,6 @@ export class Bot extends EventEmitter {
   public readonly modules = new UniqueMap<string, Module>();
   public readonly client: Client;
   public readonly commandMap = new UniqueMap<string, Command>();
-  public readonly modalMap = new UniqueMap<string, ModalEntry>();
 
   private constructor(private readonly token: string, moduleNames: string[], public readonly database: Database) {
     super();
@@ -84,10 +82,6 @@ export class Bot extends EventEmitter {
 
   public registerCommand(entry: Command): void {
     this.commandMap.set(entry.name, entry);
-  }
-
-  public registerModalEntry(entry: ModalEntry): void {
-    this.modalMap.set(entry.id, entry);
   }
 
   private loadModule(moduleName: string): void {
@@ -197,15 +191,7 @@ export class Bot extends EventEmitter {
     });
 
     this.client.on(Events.InteractionCreate, async (interaction) => {
-      if (interaction.isModalSubmit()) {
-        const entry = this.modalMap.get(interaction.customId);
-
-        if (entry === undefined) {
-          return;
-        }
-
-        await entry.callback(interaction);
-      } else if (interaction.isChatInputCommand()) {
+      if (interaction.isChatInputCommand()) {
         if (!interaction.channel || !interaction.channel.isTextBased()) {
           await interaction.reply('Commands are only available in text-based channels.');
           return;
