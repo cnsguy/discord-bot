@@ -1,17 +1,14 @@
----
 modules:
-  - google: !translate
-  - google: !youtube
-  - talkbot: !sender
-  - talkbot: !quote
+  - translate: !translate
+  - youtube: !youtube
+  - talkbot: !sender, !quote
   - vote: vote module
   - roll: roll a random number
-  - dns: resolve a domain name, reverse dns lookup
+  - lookup: resolve a domain name, reverse dns lookup
   - geoiplookup: geoip lookup
 
 general:
   - drop unnecessary 1:1 database mapping wherever applicable
-  - maybe replace channel.send stuff with early construction of CommandInteraction + separate args param
 
 bugs?:
   - reminder: repeating reminders will only get sent once even if the interval has passed multiple times since the bot was last running
