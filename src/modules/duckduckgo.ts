@@ -39,7 +39,7 @@ export class DuckDuckGoModule extends Module {
     super();
 
     const duckduckgoCommand = new Command(
-      '!g',
+      '!ddg',
       'Search the web (with duckduckgo)',
       '<query>',
       1,
@@ -48,7 +48,6 @@ export class DuckDuckGoModule extends Module {
     );
 
     bot.registerCommand(duckduckgoCommand);
-    bot.registerCommandWithName('?', duckduckgoCommand);
     this.bot = bot;
   }
 

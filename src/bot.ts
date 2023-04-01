@@ -82,12 +82,8 @@ export class Bot extends EventEmitter {
     return new Bot(token, modules, database);
   }
 
-  public registerCommandWithName(name: string, entry: Command): void {
-    this.commandMap.set(name, entry);
-  }
-
   public registerCommand(entry: Command): void {
-    this.registerCommandWithName(entry.name, entry);
+    this.commandMap.set(entry.name, entry);
   }
 
   public registerModalEntry(entry: ModalEntry): void {
