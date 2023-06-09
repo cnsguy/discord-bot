@@ -1,35 +1,32 @@
 import { Module } from '../module';
-import { Command, CommandInteraction } from '../command';
-import { Bot } from '../bot';
-import { EmbedBuilder } from 'discord.js';
+import { Bot, SlashCommand } from '../bot';
+import { ChatInputCommandInteraction, EmbedBuilder, SlashCommandBuilder } from 'discord.js';
 import { map, joinWith, stringFrom, pipe } from 'iter-tools';
 
-function formatCommandHelp(name: string, command: Command): string {
-  return `**${name}**: ${command.description}`;
+function formatCommandHelp(entry: SlashCommand): string {
+  return `**${entry.command.name}**: ${entry.command.description}`;
 }
 
 export class HelpModule extends Module {
   private constructor(private readonly bot: Bot) {
     super();
+    const helpCommand = new SlashCommandBuilder().setName('help').setDescription('Get help').toJSON();
+    bot.registerSlashCommand(helpCommand, (interaction) => this.helpCommand(interaction));
     this.bot = bot;
-    this.bot.registerCommand(
-      new Command('!help', 'Get help', '-', 0, 0, async (interaction) => this.helpCommand(interaction))
-    );
   }
 
   public static load(bot: Bot): HelpModule {
     return new HelpModule(bot);
   }
 
-  private async helpCommand(interaction: CommandInteraction): Promise<void> {
+  private async helpCommand(interaction: ChatInputCommandInteraction): Promise<void> {
     const makeHelpText = pipe(
-      map((entry: [string, Command]) => formatCommandHelp(entry[0], entry[1])),
+      map((command: SlashCommand) => formatCommandHelp(command)),
       joinWith('\n'),
       stringFrom
     );
 
-    const helpText = makeHelpText(this.bot.commandMap.entries());
-    const embed = new EmbedBuilder().setDescription(helpText);
-    await interaction.reply({ embeds: [embed] });
+    const helpText = makeHelpText(this.bot.slashCommands.values());
+    await interaction.reply({ embeds: [new EmbedBuilder().setDescription(helpText)] });
   }
 }

@@ -1,5 +1,5 @@
-import { PermissionsBitField } from 'discord.js';
-import { CommandInteraction } from './command';
+import { ChatInputCommandInteraction, PermissionsBitField } from 'discord.js';
+import assert from 'assert';
 
 export interface Permission {
   name: string;
@@ -12,16 +12,20 @@ export const ManageGuild: Permission = {
 };
 
 export async function checkInteractionPermissions(
-  interaction: CommandInteraction,
-  permissions: Permission[]
+  interaction: ChatInputCommandInteraction,
+  required: Permission[]
 ): Promise<boolean> {
-  if (interaction.permissions === null) {
+  const permissions = interaction.member?.permissions;
+
+  if (permissions === undefined) {
     await interaction.reply('This command is only available in a server.');
     return false;
   }
 
-  for (const permission of permissions) {
-    if ((interaction.permissions.bitfield & permission.bits) == 0n) {
+  assert(permissions instanceof PermissionsBitField);
+
+  for (const permission of required) {
+    if ((permissions.bitfield & permission.bits) == 0n) {
       await interaction.reply(`Missing permission: ${permission.name}`);
       return false;
     }

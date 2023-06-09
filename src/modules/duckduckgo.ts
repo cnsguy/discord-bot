@@ -1,7 +1,6 @@
 import { Module } from '../module';
-import { Command, CommandInteraction } from '../command';
 import { Bot } from '../bot';
-import { EmbedBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, EmbedBuilder, SlashCommandBuilder, SlashCommandStringOption } from 'discord.js';
 import { parse as parseURL } from 'url';
 import * as cheerio from 'cheerio';
 
@@ -38,16 +37,13 @@ export class DuckDuckGoModule extends Module {
   private constructor(private readonly bot: Bot) {
     super();
 
-    const duckduckgoCommand = new Command(
-      '!ddg',
-      'Search the web (with duckduckgo)',
-      '<query>',
-      1,
-      1,
-      async (interaction) => this.ddgCommand(interaction)
-    );
+    const duckDuckGoCommand = new SlashCommandBuilder()
+      .setName('ddg')
+      .setDescription('Search the web (with duckduckgo)')
+      .addStringOption(new SlashCommandStringOption().setName('query').setDescription('Search query').setRequired(true))
+      .toJSON();
 
-    bot.registerCommand(duckduckgoCommand);
+    bot.registerSlashCommand(duckDuckGoCommand, (interaction) => this.ddgCommand(interaction));
     this.bot = bot;
   }
 
@@ -55,30 +51,33 @@ export class DuckDuckGoModule extends Module {
     return new DuckDuckGoModule(bot);
   }
 
-  private async ddgCommand(interaction: CommandInteraction): Promise<void> {
-    const query = interaction.args[0];
-    const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`);
-    const decoder = new TextDecoder('utf-8');
+  private async ddgCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const query = interaction.options.getString('query')!;
+    await interaction.deferReply();
+
+    const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`, {
+      headers: new Headers({
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0',
+      }),
+    });
 
     if (response.status != 200) {
-      await interaction.reply(`Failed to get search results; server returned error code ${response.status}`);
+      await interaction.followUp(`Failed to get search results; server returned error code ${response.status}`);
       return;
     }
 
-    const html = decoder.decode(await response.arrayBuffer());
-    const searchResult = extractResults(html);
+    const searchResults = extractResults(new TextDecoder('utf-8').decode(await response.arrayBuffer()));
 
-    if (searchResult.length === 0) {
-      await interaction.reply(`Failed to get search results`);
+    if (searchResults.length === 0) {
+      await interaction.followUp(`Failed to get search results`);
       return;
     }
 
-    for (const result of searchResult.slice(0, 3)) {
-      const embed = new EmbedBuilder();
-      embed.setTitle(result.title);
-      embed.setURL(result.url);
-      embed.setDescription(result.snippet);
-      await interaction.reply({ embeds: [embed] });
-    }
+    const embeds = searchResults
+      .slice(0, 3)
+      .map((result) => new EmbedBuilder().setTitle(result.title).setURL(result.url).setDescription(result.snippet));
+
+    await interaction.followUp({ embeds: embeds });
   }
 }

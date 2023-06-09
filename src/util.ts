@@ -80,9 +80,3 @@ export function readEnvOrThrow(key: string): string {
 
   return value;
 }
-
-// FIXME kind of bad
-export function choice<T>(items: T[]): T {
-  const idx = Math.floor(Math.random() * items.length);
-  return items[idx];
-}

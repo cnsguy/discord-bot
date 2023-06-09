@@ -1,7 +1,6 @@
 import { Module } from '../module';
-import { Command, CommandInteraction } from '../command';
 import { Bot } from '../bot';
-import { EmbedBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, EmbedBuilder, SlashCommandBuilder } from 'discord.js';
 
 interface TauriJSONStatusEntry {
   readonly shortname: string;
@@ -14,19 +13,22 @@ interface TauriJSONStatusEntry {
 }
 
 export class TauriModule extends Module {
-  private constructor(private readonly bot: Bot) {
+  private constructor(bot: Bot) {
     super();
-    this.bot = bot;
-    this.bot.registerCommand(
-      new Command('!sz', 'Tauri status', '-', 0, 0, async (interaction) => this.tauriCommand(interaction))
-    );
+
+    const tauriStatusCommand = new SlashCommandBuilder()
+      .setName('tauri')
+      .setDescription('Display Tauri server status')
+      .toJSON();
+
+    bot.registerSlashCommand(tauriStatusCommand, (interaction) => this.tauriCommand(interaction));
   }
 
   public static load(bot: Bot): TauriModule {
     return new TauriModule(bot);
   }
 
-  private async tauriCommand(interaction: CommandInteraction): Promise<void> {
+  private async tauriCommand(interaction: ChatInputCommandInteraction): Promise<void> {
     const response = await fetch('https://tauriwow.com/files/serverstatus_json.php');
 
     if (response.status != 200) {
