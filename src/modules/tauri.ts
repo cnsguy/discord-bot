@@ -38,9 +38,10 @@ export class TauriModule extends Module {
 
     const json = JSON.parse(await response.text()) as TauriJSONStatusEntry[];
     const embed = new EmbedBuilder();
+    const filter = new Set(['Tauri', 'WoD', 'Evermoon', 'Mrgl', 'Crystalsong']);
 
     for (const realm of json) {
-      if (realm.hidden === 'true') {
+      if (realm.hidden === 'true' || !filter.has(realm.shortname)) {
         continue;
       }
 
