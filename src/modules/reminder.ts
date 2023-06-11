@@ -102,7 +102,7 @@ export class DateModule extends Module {
 
   private constructor(private readonly bot: Bot) {
     const reminderInCommand = new SlashCommandBuilder()
-      .setName('reminder')
+      .setName('reminder-in')
       .setDescription('Show a reminder once on a specific date (relative)')
       .addStringOption(
         new SlashCommandStringOption().setName('date').setDescription('Date to show the message on').setRequired(true)
