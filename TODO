@@ -1,7 +1,7 @@
 modules:
   - translate: !translate
   - youtube: !youtube
-  - talkbot: !sender, !quote
+  - talkbot: !sender , !quote
   - vote: vote module
   - roll: roll a random number
   - lookup: resolve a domain name, reverse dns lookup

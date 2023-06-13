@@ -20,6 +20,7 @@ import { NoteModule } from './modules/note';
 import { TauriModule } from './modules/tauri';
 import { DuckDuckGoModule } from './modules/duckduckgo';
 import sqlite3 from 'sqlite3';
+import { GelbooruModule } from './modules/gelbooru';
 
 export type SlashCommandCallback = (interaction: ChatInputCommandInteraction) => Promise<void>;
 
@@ -97,6 +98,7 @@ export class Bot extends EventEmitter {
     const moduleNameMap: LoadableModuleMap = {
       ['rss']: RSSModule,
       ['talkbot']: TalkbotModule,
+      ['gelbooru']: GelbooruModule,
       ['help']: HelpModule,
       ['reminder']: ReminderModule,
       ['choice']: ChoiceModule,
@@ -150,7 +152,11 @@ export class Bot extends EventEmitter {
           return;
         }
 
-        await entry.callback(interaction);
+        try {
+          await entry.callback(interaction);
+        } catch (error) {
+          console.error(`Exception while running command ${interaction.commandName}: ${String(error)}`);
+        }
       }
     });
   }
