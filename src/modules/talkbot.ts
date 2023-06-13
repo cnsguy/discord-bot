@@ -20,11 +20,17 @@ export class TalkbotModule extends Module {
   public async onMessageCreate(message: Message): Promise<void> {
     const id = this.bot.client.user?.id;
 
-    if (id && message.content.search(`<@${id}>`) !== -1) {
-      const newEntry = message.content.replaceAll(`<@${id}>`, '').trim();
-      await this.database.newEntry(newEntry, message.author.id);
-      const entry = await this.database.getRandomEntry();
-      await message.reply(entry.quote);
+    if (id === undefined || message.content.search(`<@${id}>`) === -1) {
+      return;
     }
+
+    const newEntry = message.content.replaceAll(`<@${id}>`, '').trim();
+
+    if (newEntry.length > 0) {
+      await this.database.newEntry(newEntry, message.author.id);
+    }
+
+    const entry = await this.database.getRandomEntry();
+    await message.reply(entry.quote);
   }
 }
