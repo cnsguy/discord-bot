@@ -52,7 +52,7 @@ interface LoadableModuleMap {
   readonly [key: string]: LoadableModule | undefined;
 }
 
-export declare interface Bot {
+export interface Bot {
   on(event: BotEventNames.ClientReady, listener: () => void): this;
   on(event: BotEventNames.MessageCreate, listener: (message: Message) => void): this;
 }
@@ -175,11 +175,19 @@ export class Bot extends EventEmitter {
         body: commands,
       });
 
-      this.emit(BotEventNames.ClientReady);
+      try {
+        this.emit(BotEventNames.ClientReady);
+      } catch (error) {
+        console.error(`Exception while emitting ClientReady: ${String(error)}`);
+      }
     });
 
     this.client.on(Events.MessageCreate, (message) => {
-      this.emit(BotEventNames.MessageCreate, message);
+      try {
+        this.emit(BotEventNames.MessageCreate, message);
+      } catch (error) {
+        console.error(`Exception while emitting MessageCreate: ${String(error)}`);
+      }
     });
 
     this.client.on(Events.InteractionCreate, async (interaction) => {
