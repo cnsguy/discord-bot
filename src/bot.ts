@@ -5,12 +5,14 @@ import {
   Message,
   RESTPostAPIChatInputApplicationCommandsJSONBody,
   ChatInputCommandInteraction,
+  PermissionsBitField,
   Routes,
 } from 'discord.js';
 import { Module, LoadableModule } from './module';
 import { UniqueMap } from './unique_map';
 import { EventEmitter } from 'events';
 import { open, Database } from 'sqlite';
+import { Permission } from './permission';
 import { RSSModule } from './modules/rss';
 import { TalkbotModule } from './modules/talkbot';
 import { HelpModule } from './modules/help';
@@ -19,8 +21,9 @@ import { ChoiceModule } from './modules/choice';
 import { NoteModule } from './modules/note';
 import { TauriModule } from './modules/tauri';
 import { DuckDuckGoModule } from './modules/duckduckgo';
-import sqlite3 from 'sqlite3';
 import { GelbooruModule } from './modules/gelbooru';
+import sqlite3 from 'sqlite3';
+import assert from 'assert';
 
 export type SlashCommandCallback = (interaction: ChatInputCommandInteraction) => Promise<void>;
 
@@ -64,7 +67,12 @@ export class Bot extends EventEmitter {
   public readonly client: Client;
   public readonly slashCommands = new UniqueMap<string, SlashCommand>();
 
-  private constructor(private readonly token: string, moduleNames: string[], public readonly database: Database) {
+  private constructor(
+    private readonly token: string,
+    private readonly adminUserId: string | undefined,
+    moduleNames: string[],
+    public readonly database: Database
+  ) {
     super();
 
     this.client = new Client({
@@ -78,6 +86,7 @@ export class Bot extends EventEmitter {
 
     this.token = token;
     this.database = database;
+    this.adminUserId = adminUserId;
 
     for (const moduleName of moduleNames) {
       console.log(`Loading module ${moduleName}`);
@@ -85,13 +94,18 @@ export class Bot extends EventEmitter {
     }
   }
 
-  public static async new(token: string, modules: string[], databaseName: string): Promise<Bot> {
+  public static async new(
+    token: string,
+    adminUserId: string | undefined,
+    modules: string[],
+    databaseName: string
+  ): Promise<Bot> {
     const database = await open({
       filename: databaseName,
       driver: sqlite3.Database,
     });
 
-    return new Bot(token, modules, database);
+    return new Bot(token, adminUserId, modules, database);
   }
 
   private loadModule(moduleName: string): void {
@@ -121,6 +135,35 @@ export class Bot extends EventEmitter {
     callback: SlashCommandCallback
   ): void {
     this.slashCommands.set(json.name, new SlashCommand(json, callback));
+  }
+
+  public async checkInteractionPermissions(
+    interaction: ChatInputCommandInteraction,
+    required: Permission[]
+  ): Promise<boolean> {
+    const userId = interaction.user?.id;
+
+    if (this.adminUserId !== undefined && userId == this.adminUserId) {
+      return true;
+    }
+
+    const permissions = interaction.member?.permissions;
+
+    if (permissions === undefined) {
+      await interaction.reply('This command is only available in a server.');
+      return false;
+    }
+
+    assert(permissions instanceof PermissionsBitField);
+
+    for (const permission of required) {
+      if ((permissions.bitfield & permission.bits) == 0n) {
+        await interaction.reply(`Missing permission: ${permission.name}`);
+        return false;
+      }
+    }
+
+    return true;
   }
 
   private registerEvents(): void {

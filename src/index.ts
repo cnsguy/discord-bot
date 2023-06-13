@@ -7,7 +7,8 @@ async function main(): Promise<void> {
   const token = readEnvOrThrow('TOKEN');
   const modules = readEnvOrThrow('MODULES').split(' ');
   const database = readEnvOrThrow('DATABASE');
-  const bot = await Bot.new(token, modules, database);
+  const adminUserId = process.env['ADMIN_USER_ID'];
+  const bot = await Bot.new(token, adminUserId, modules, database);
   await bot.run();
 }
 

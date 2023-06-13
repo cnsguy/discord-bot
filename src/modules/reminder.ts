@@ -12,7 +12,7 @@ import { ReminderDatabase } from './reminder/database';
 import { splitEvery } from 'ramda';
 import { parseDate } from 'chrono-node';
 import { formatDistanceStrict } from 'date-fns';
-import { checkInteractionPermissions, ManageGuild } from '../permission';
+import { ManageGuild } from '../permission';
 
 enum DatePart {
   Year = 1,
@@ -354,7 +354,7 @@ export class DateModule extends Module {
   }
 
   private async reminderAdminListCommand(interaction: ChatInputCommandInteraction): Promise<void> {
-    if (!(await checkInteractionPermissions(interaction, [ManageGuild]))) {
+    if (!(await this.bot.checkInteractionPermissions(interaction, [ManageGuild]))) {
       return;
     }
 
@@ -382,7 +382,7 @@ export class DateModule extends Module {
   }
 
   private async reminderAdminDeleteCommand(interaction: ChatInputCommandInteraction): Promise<void> {
-    if (!(await checkInteractionPermissions(interaction, [ManageGuild]))) {
+    if (!(await this.bot.checkInteractionPermissions(interaction, [ManageGuild]))) {
       return;
     }
 

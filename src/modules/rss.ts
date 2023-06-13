@@ -11,7 +11,7 @@ import {
   TextBasedChannel,
 } from 'discord.js';
 import { RSSDatabase } from './rss/database';
-import { checkInteractionPermissions, ManageGuild } from '../permission';
+import { ManageGuild } from '../permission';
 
 function wrapRegexInCode(content: string): string {
   return '```' + content.replace('`', '\\`') + '```';
@@ -145,7 +145,7 @@ export class RSSModule extends Module {
   }
 
   private async rssMonitorLinkCommand(interaction: ChatInputCommandInteraction): Promise<void> {
-    if (!(await checkInteractionPermissions(interaction, [ManageGuild]))) {
+    if (!(await this.bot.checkInteractionPermissions(interaction, [ManageGuild]))) {
       return;
     }
 
@@ -222,7 +222,7 @@ export class RSSModule extends Module {
   }
 
   private async rssUnmonitorIdCommand(interaction: ChatInputCommandInteraction): Promise<void> {
-    if (!(await checkInteractionPermissions(interaction, [ManageGuild]))) {
+    if (!(await this.bot.checkInteractionPermissions(interaction, [ManageGuild]))) {
       return;
     }
 
@@ -245,7 +245,7 @@ export class RSSModule extends Module {
   }
 
   private async rssUnmonitorAllCommand(interaction: ChatInputCommandInteraction): Promise<void> {
-    if (!(await checkInteractionPermissions(interaction, [ManageGuild]))) {
+    if (!(await this.bot.checkInteractionPermissions(interaction, [ManageGuild]))) {
       return;
     }
 
