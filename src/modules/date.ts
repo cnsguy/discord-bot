@@ -24,12 +24,18 @@ function parseUserId(arg: string): string | null {
 
 function matchDatePart(part: string): DatePart | null {
   const dateParts: [string, DatePart][] = [
-    ['years?', DatePart.Year],
-    ['months?', DatePart.Month],
-    ['days?', DatePart.Day],
-    ['hours?', DatePart.Hour],
-    ['minutes?', DatePart.Minute],
-    ['seconds?', DatePart.Second],
+    ['^years?$', DatePart.Year],
+    ['^[eé]v$', DatePart.Year],
+    ['^months?$', DatePart.Month],
+    ['^h[oó]nap$', DatePart.Month],
+    ['^days?$', DatePart.Day],
+    ['^nap$', DatePart.Day],
+    ['^hours?$', DatePart.Hour],
+    ['^[oó]ra$', DatePart.Hour],
+    ['^minutes?$', DatePart.Minute],
+    ['^perc$', DatePart.Minute],
+    ['^seconds?$', DatePart.Second],
+    ['^m[aá]sodperc$', DatePart.Second],
   ];
 
   for (const entry of dateParts) {
