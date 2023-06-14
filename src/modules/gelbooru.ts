@@ -47,25 +47,25 @@ export class GelbooruModule extends Module {
     super();
 
     bot.registerCommand(
-      new Command('explosion', 'Random Megumin picture from Gelbooru', '-', 0, 0, (interaction) =>
+      new Command('!explosion', 'Random Megumin picture from Gelbooru', '-', 0, 0, (interaction) =>
         this.explosionCommand(interaction)
       )
     );
 
     bot.registerCommand(
-      new Command('useless', 'Random Aqua picture from Gelbooru', '-', 0, 0, (interaction) =>
+      new Command('!useless', 'Random Aqua picture from Gelbooru', '-', 0, 0, (interaction) =>
         this.uselessCommand(interaction)
       )
     );
 
     bot.registerCommand(
-      new Command('illya', 'Random Illya picture from Gelbooru', '-', 0, 0, (interaction) =>
+      new Command('!illya', 'Random Illya picture from Gelbooru', '-', 0, 0, (interaction) =>
         this.illyaCommand(interaction)
       )
     );
 
     bot.registerCommand(
-      new Command('gelbooru', 'Search gelbooru', '<tags>', 1, 1, (interaction) => this.gelbooruCommand(interaction))
+      new Command('!gelbooru', 'Search gelbooru', '<tags>', 1, 1, (interaction) => this.gelbooruCommand(interaction))
     );
   }
 
