@@ -347,10 +347,11 @@ export class DateModule extends Module {
     const selectedEntries = [];
 
     for (const idPart of ids) {
-      const id = Number(idPart.trim());
+      const trimmedIdPart = idPart.trim();
+      const id = Number(trimmedIdPart);
 
-      if (id < 1 || id > entries.length) {
-        await interaction.reply(`Invalid ID: ${id}`);
+      if (Number.isNaN(id) || id < 1 || id > entries.length) {
+        await interaction.reply(`Invalid ID: ${trimmedIdPart}`);
         return;
       }
 
