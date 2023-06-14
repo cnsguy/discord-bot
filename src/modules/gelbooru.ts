@@ -1,6 +1,5 @@
 import { Module } from '../module';
 import { Bot } from '../bot';
-import { EmbedBuilder } from 'discord.js';
 import { Command, CommandInteraction } from '../command';
 
 interface ResultEntry {
@@ -30,16 +29,13 @@ async function handleImageCommon(interaction: CommandInteraction, tags: string):
   }
 
   const imageUrl = json.post[0].file_url;
-  const id = json.post[0].id;
 
   if (imageUrl === undefined) {
     await interaction.reply(`Failed to get image; no results?`);
     return;
   }
 
-  const postUrl = `https://gelbooru.com/index.php?page=post&s=view&id=${id}`;
-  const embed = new EmbedBuilder().setTitle(`Post number ${id}`).setURL(postUrl).setImage(imageUrl);
-  await interaction.reply({ embeds: [embed] });
+  await interaction.reply(imageUrl);
 }
 
 export class GelbooruModule extends Module {
