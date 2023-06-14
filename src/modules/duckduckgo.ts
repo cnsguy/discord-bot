@@ -1,6 +1,7 @@
 import { Module } from '../module';
+import { Command, CommandInteraction } from '../command';
 import { Bot } from '../bot';
-import { ChatInputCommandInteraction, EmbedBuilder, SlashCommandBuilder, SlashCommandStringOption } from 'discord.js';
+import { EmbedBuilder } from 'discord.js';
 import { parse as parseURL } from 'url';
 import * as cheerio from 'cheerio';
 
@@ -37,13 +38,11 @@ export class DuckDuckGoModule extends Module {
   private constructor(private readonly bot: Bot) {
     super();
 
-    const duckDuckGoCommand = new SlashCommandBuilder()
-      .setName('ddg')
-      .setDescription('Search the web (with duckduckgo)')
-      .addStringOption(new SlashCommandStringOption().setName('query').setDescription('Search query').setRequired(true))
-      .toJSON();
+    const duckduckgoCommand = new Command('!ddg', 'Search the web (with duckduckgo)', '<query>', 1, 1, (interaction) =>
+      this.ddgCommand(interaction)
+    );
 
-    bot.registerSlashCommand(duckDuckGoCommand, (interaction) => this.ddgCommand(interaction));
+    bot.registerCommand(duckduckgoCommand);
     this.bot = bot;
   }
 
@@ -51,33 +50,30 @@ export class DuckDuckGoModule extends Module {
     return new DuckDuckGoModule(bot);
   }
 
-  private async ddgCommand(interaction: ChatInputCommandInteraction): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const query = interaction.options.getString('query')!;
-    await interaction.deferReply();
-
-    const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`, {
-      headers: new Headers({
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0',
-      }),
-    });
+  private async ddgCommand(interaction: CommandInteraction): Promise<void> {
+    const query = interaction.args[0];
+    const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`);
+    const decoder = new TextDecoder('utf-8');
 
     if (response.status != 200) {
-      await interaction.followUp(`Failed to get search results; server returned error code ${response.status}`);
+      await interaction.reply(`Failed to get search results; server returned error code ${response.status}`);
       return;
     }
 
-    const searchResults = extractResults(new TextDecoder('utf-8').decode(await response.arrayBuffer()));
+    const html = decoder.decode(await response.arrayBuffer());
+    const searchResult = extractResults(html);
 
-    if (searchResults.length === 0) {
-      await interaction.followUp(`Failed to get search results`);
+    if (searchResult.length === 0) {
+      await interaction.reply(`Failed to get search results`);
       return;
     }
 
-    const embeds = searchResults
-      .slice(0, 3)
-      .map((result) => new EmbedBuilder().setTitle(result.title).setURL(result.url).setDescription(result.snippet));
-
-    await interaction.followUp({ embeds: embeds });
+    for (const result of searchResult.slice(0, 3)) {
+      const embed = new EmbedBuilder();
+      embed.setTitle(result.title);
+      embed.setURL(result.url);
+      embed.setDescription(result.snippet);
+      await interaction.reply({ embeds: [embed] });
+    }
   }
 }

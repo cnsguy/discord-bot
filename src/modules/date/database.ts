@@ -65,7 +65,7 @@ function processRawDateEntry(database: Database, entry: RawDateEntry): DateEntry
   );
 }
 
-export class ReminderDatabase {
+export class DateDatabase {
   public constructor(private readonly database: Database) {
     this.database = database;
   }

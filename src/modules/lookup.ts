@@ -1,37 +1,30 @@
 import { Module } from '../module';
+import { Command, CommandInteraction } from '../command';
 import { Bot } from '../bot';
-import { ChatInputCommandInteraction, SlashCommandBuilder, SlashCommandStringOption } from 'discord.js';
 
 export class LookupModule extends Module {
   private constructor(private readonly bot: Bot) {
     super();
     this.bot = bot;
-
-    const lookupCommand = new SlashCommandBuilder()
-      .setName('lookup')
-      .setDescription('Look up IPs associated with a domain name')
-      .addStringOption(new SlashCommandStringOption().setName('domain').setDescription('Domain name'))
-      .toJSON();
-
-    const reverseLookupCommand = new SlashCommandBuilder()
-      .setName('rlookup')
-      .setDescription('Look up domain names associated with an IP address')
-      .addStringOption(new SlashCommandStringOption().setName('ip').setDescription('IP address'))
-      .toJSON();
-
-    bot.registerSlashCommand(lookupCommand, (interaction) => this.lookupCommand(interaction));
-    bot.registerSlashCommand(reverseLookupCommand, (interaction) => this.reverseLookupCommand(interaction));
+    this.bot.registerCommand(
+      new Command('!lookup', 'Look up DNS info', '-', 0, 0, (interaction) => this.lookupCommand(interaction))
+    );
+    this.bot.registerCommand(
+      new Command('!rlookup', 'Look up reverse DNS info', '-', 0, 0, async (interaction) =>
+        this.reverseLookupCommand(interaction)
+      )
+    );
   }
 
   public static load(bot: Bot): LookupModule {
     return new LookupModule(bot);
   }
 
-  private async lookupCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async lookupCommand(interaction: CommandInteraction): Promise<void> {
     await interaction.reply('NYI');
   }
 
-  private async reverseLookupCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async reverseLookupCommand(interaction: CommandInteraction): Promise<void> {
     await interaction.reply('NYI');
   }
 }
