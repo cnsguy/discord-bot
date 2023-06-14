@@ -10,7 +10,7 @@ export class LookupModule extends Module {
       new Command('!lookup', 'Look up DNS info', '-', 0, 0, (interaction) => this.lookupCommand(interaction))
     );
     this.bot.registerCommand(
-      new Command('!rlookup', 'Look up reverse DNS info', '-', 0, 0, async (interaction) =>
+      new Command('!rlookup', 'Look up reverse DNS info', '-', 0, 0, (interaction) =>
         this.reverseLookupCommand(interaction)
       )
     );

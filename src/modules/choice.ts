@@ -5,7 +5,7 @@ import { Command, CommandInteraction } from '../command';
 export class ChoiceModule extends Module {
   private constructor(bot: Bot) {
     bot.registerCommand(
-      new Command('!choice', 'Random choice between the listed options', '<choices...>', 1, 2, async (interaction) =>
+      new Command('!choice', 'Random choice between the listed options', '<choices...>', 1, 2, (interaction) =>
         this.choiceCommand(interaction)
       )
     );

@@ -38,7 +38,7 @@ export class RSSModule extends Module {
     );
 
     bot.registerCommand(
-      new Command('!rss-unmonitor', 'Delete rss entries from the database', '<id...>', 1, null, async (interaction) =>
+      new Command('!rss-unmonitor', 'Delete rss entries from the database', '<id...>', 1, null, (interaction) =>
         this.rssUnmonitorIdsCommand(interaction)
       )
     );

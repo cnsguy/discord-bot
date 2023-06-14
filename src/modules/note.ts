@@ -45,9 +45,7 @@ export class NoteModule extends Module {
 
   private constructor(private readonly bot: Bot) {
     bot.registerCommand(
-      new Command('n/n+', 'Add a note to your list', '<note>', 1, 1, async (interaction) =>
-        this.noteAddCommand(interaction)
-      )
+      new Command('n/n+', 'Add a note to your list', '<note>', 1, 1, (interaction) => this.noteAddCommand(interaction))
     );
 
     bot.registerCommand(
@@ -55,13 +53,13 @@ export class NoteModule extends Module {
     );
 
     bot.registerCommand(
-      new Command('n/n-', 'Delete the specified notes by IDs', '<ids...>', 1, null, async (interaction) =>
+      new Command('n/n-', 'Delete the specified notes by IDs', '<ids...>', 1, null, (interaction) =>
         this.noteDeleteCommand(interaction)
       )
     );
 
     bot.registerCommand(
-      new Command('n/n?', 'Search for a given pattern in your notes', '<pattern>', 1, 1, async (interaction) =>
+      new Command('n/n?', 'Search for a given pattern in your notes', '<pattern>', 1, 1, (interaction) =>
         this.noteSearchCommand(interaction)
       )
     );

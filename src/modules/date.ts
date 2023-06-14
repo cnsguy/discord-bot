@@ -135,7 +135,7 @@ export class DateModule extends Module {
     );
 
     bot.registerCommand(
-      new Command('!date-list', 'List all reminders in your current server', '-', 0, 0, async (interaction) =>
+      new Command('!date-list', 'List all reminders in your current server', '-', 0, 0, (interaction) =>
         this.dateListCommand(interaction)
       )
     );
@@ -152,7 +152,7 @@ export class DateModule extends Module {
     );
 
     bot.registerCommand(
-      new Command('!date-delete', 'Delete the specified reminders by ID', '<ids...>', 1, null, async (interaction) =>
+      new Command('!date-delete', 'Delete the specified reminders by ID', '<ids...>', 1, null, (interaction) =>
         this.dateDeleteCommand(interaction)
       )
     );
