@@ -230,7 +230,12 @@ export class Bot extends EventEmitter {
     });
 
     this.client.on(Events.MessageCreate, (message) => {
-      this.emit(BotEventNames.MessageCreate, message);
+      try {
+        this.emit(BotEventNames.MessageCreate, message);
+      } catch (error) {
+        console.error(`Exception while emitting event MessageCreate: ${String(error)}`);
+      }
+
       void this.tryProcessCommands(message);
     });
   }
