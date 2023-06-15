@@ -115,7 +115,7 @@ export class NoteModule extends Module {
     }
 
     for (const [id, entry] of selectedEntries) {
-      await interaction.reply(`[${id}] ${entry.note}`);
+      await interaction.reply(`**[${id}]** ${entry.note}`);
       await entry.delete();
     }
   }
