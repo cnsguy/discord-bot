@@ -65,9 +65,11 @@ export class GelbooruModule extends Module {
       )
     );
 
+    /*
     bot.registerCommand(
       new Command('!gelbooru', 'Search gelbooru', '<tags>', 1, 1, (interaction) => this.gelbooruCommand(interaction))
     );
+    */
   }
 
   public static load(bot: Bot): GelbooruModule {
@@ -86,9 +88,11 @@ export class GelbooruModule extends Module {
     await handleImageCommon(interaction, `rating:general sort:random illyasviel_von_einzbern`);
   }
 
+  /*
   private async gelbooruCommand(interaction: CommandInteraction): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const tags = interaction.args[0];
     await handleImageCommon(interaction, `rating:general sort:random ${tags}`);
   }
+  */
 }
