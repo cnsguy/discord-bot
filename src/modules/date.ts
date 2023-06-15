@@ -38,9 +38,7 @@ function matchDatePart(part: string): DatePart | null {
     ['^m[aá]sodperc$', DatePart.Second],
   ];
 
-  for (const entry of dateParts) {
-    const [pattern, enumEntry] = entry;
-
+  for (const [pattern, enumEntry] of dateParts) {
     if (part.match(new RegExp(pattern, 'i'))) {
       return enumEntry;
     }
