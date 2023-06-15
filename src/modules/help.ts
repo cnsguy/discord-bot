@@ -1,7 +1,6 @@
 import { Module } from '../module';
 import { Command, CommandInteraction } from '../command';
 import { Bot } from '../bot';
-import { EmbedBuilder } from 'discord.js';
 import { map, joinWith, stringFrom, pipe } from 'iter-tools';
 
 function formatCommandHelp(name: string, command: Command): string {
@@ -29,7 +28,6 @@ export class HelpModule extends Module {
     );
 
     const helpText = makeHelpText(this.bot.commandMap.entries());
-    const embed = new EmbedBuilder().setDescription(helpText);
-    await interaction.reply({ embeds: [embed] });
+    await interaction.reply(helpText);
   }
 }
