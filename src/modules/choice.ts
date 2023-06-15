@@ -10,6 +10,12 @@ export class ChoiceModule extends Module {
       )
     );
 
+    bot.registerCommand(
+      new Command('!roll', 'Roll a random value between the specified range', '<min> <max>', 2, 2, (interaction) =>
+        this.rollCommand(interaction)
+      )
+    );
+
     super();
   }
 
@@ -22,5 +28,28 @@ export class ChoiceModule extends Module {
     const choices = interaction.args[0].split(separator);
     const index = Math.floor(Math.random() * choices.length);
     await interaction.reply(choices[index]);
+  }
+
+  private async rollCommand(interaction: CommandInteraction): Promise<void> {
+    let min = Number(interaction.args[0]);
+
+    if (Number.isNaN(min)) {
+      await interaction.reply(`Invalid min: ${min}`);
+      return;
+    }
+
+    let max = Number(interaction.args[1]);
+
+    if (Number.isNaN(min)) {
+      await interaction.reply(`Invalid max: ${max}`);
+      return;
+    }
+
+    if (min > max) {
+      [min, max] = [max, min];
+    }
+
+    const value = Math.round(Math.random() * (max - min)) + min;
+    await interaction.reply(String(value));
   }
 }
