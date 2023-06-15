@@ -8,7 +8,6 @@ export class TalkbotModule extends Module {
 
   private constructor(private readonly bot: Bot) {
     bot.on(BotEventNames.MessageCreate, (message) => void this.onMessageCreate(message));
-
     super();
     this.database = new TalkbotDatabase(this.bot.database);
     this.bot = bot;
@@ -32,6 +31,11 @@ export class TalkbotModule extends Module {
     }
 
     const entry = await this.database.getRandomEntryForGuild(message.guildId);
+
+    if (entry === undefined) {
+      return;
+    }
+
     await message.reply(entry.quote);
   }
 }

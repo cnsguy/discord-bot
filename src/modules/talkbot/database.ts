@@ -25,17 +25,13 @@ export class TalkbotDatabase {
     this.database = database;
   }
 
-  public async getRandomEntryForGuild(guildId: string | null): Promise<ContentEntry> {
+  public async getRandomEntryForGuild(guildId: string | null): Promise<ContentEntry | undefined> {
     const raw: RawContentEntry | undefined = await this.database.get(
       'SELECT * FROM talkbot WHERE guildId IS ? ORDER BY RANDOM() LIMIT 1',
       guildId
     );
 
-    if (raw === undefined) {
-      throw new TalkbotDatabaseError('Failed to get a quote from the talkbot table');
-    }
-
-    return new ContentEntry(raw.quote);
+    return raw !== undefined ? new ContentEntry(raw.quote) : undefined;
   }
 
   public async newEntry(quote: string, userId: string, guildId: string | null): Promise<void> {
