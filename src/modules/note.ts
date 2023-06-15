@@ -52,6 +52,17 @@ export class NoteModule extends Module {
       )
     );
 
+    bot.registerCommand(
+      new Command(
+        '!note-import',
+        'Mass import notes from bpa.st, one per each line',
+        '<paste id>',
+        1,
+        1,
+        (interaction) => this.noteImportCommand(interaction)
+      )
+    );
+
     super();
     this.bot = bot;
     this.database = new NoteDatabase(this.bot.database);
@@ -117,5 +128,35 @@ export class NoteModule extends Module {
     const entries = await this.database.getEntriesForSender(interaction.user.id);
     const filtered = entries.filter((entry) => entry.note.match(new RegExp(pattern, 'i')));
     await listNotes(interaction.channel, filtered);
+  }
+
+  private async noteImportCommand(interaction: CommandInteraction): Promise<void> {
+    if (interaction.channel === null) {
+      return;
+    }
+
+    const pasteId = interaction.args[0];
+    const link = `https://bpa.st/raw/${encodeURIComponent(pasteId)}`;
+    const response = await fetch(link);
+    const decoder = new TextDecoder('utf-8');
+
+    if (response.status != 200) {
+      await interaction.reply(`Failed to grab notes from ${link}; server returned error code ${response.status}`);
+      return;
+    }
+
+    const content = decoder.decode(await response.arrayBuffer());
+    let num = 0;
+
+    for (const note of content.split('\n')) {
+      if (note.length === 0) {
+        continue;
+      }
+
+      await this.database.newEntry(note, interaction.user.id);
+      num += 1;
+    }
+
+    await interaction.reply(`Imported ${num} notes.`);
   }
 }
