@@ -75,8 +75,8 @@ export class NoteModule extends Module {
 
   private async noteAddCommand(interaction: CommandInteraction): Promise<void> {
     const note = interaction.args[0];
-    await this.database.newEntry(note, interaction.guild?.id ?? null, interaction.user.id);
-    const id = await this.database.getNumEntriesForSenderInGuild(interaction.user.id, interaction.guild?.id ?? null);
+    await this.database.newEntry(note, interaction.user.id);
+    const id = await this.database.getNumEntriesForSenderInGuild(interaction.user.id);
     await interaction.reply(`**[${id}]** ${note}`);
   }
 
@@ -85,7 +85,7 @@ export class NoteModule extends Module {
       return;
     }
 
-    const entries = await this.database.getEntriesForSenderInGuild(interaction.user.id, interaction.guild?.id ?? null);
+    const entries = await this.database.getEntriesForSender(interaction.user.id);
 
     if (entries.length === 0) {
       await interaction.reply('No notes.');
@@ -98,7 +98,7 @@ export class NoteModule extends Module {
 
   private async noteDeleteCommand(interaction: CommandInteraction): Promise<void> {
     const ids = interaction.args;
-    const entries = await this.database.getEntriesForSenderInGuild(interaction.user.id, interaction.guild?.id ?? null);
+    const entries = await this.database.getEntriesForSender(interaction.user.id);
     const selectedEntries: [number, NoteEntry][] = [];
 
     for (const idPart of ids) {
@@ -126,7 +126,7 @@ export class NoteModule extends Module {
     }
 
     const pattern = interaction.args[0];
-    const entries = await this.database.getEntriesForSenderInGuild(interaction.user.id, interaction.guild?.id ?? null);
+    const entries = await this.database.getEntriesForSender(interaction.user.id);
     const filtered = entries.filter((entry) => entry.note.match(new RegExp(pattern, 'i')));
     await interaction.reply('Results:');
     await listNotes(interaction.channel, filtered);
