@@ -28,10 +28,10 @@ export class TalkbotModule extends Module {
     const newEntry = message.content.replaceAll(`<@${id}>`, '').trim();
 
     if (newEntry.length > 0) {
-      await this.database.newEntry(newEntry, message.author.id);
+      await this.database.newEntry(newEntry, message.author.id, message.guildId);
     }
 
-    const entry = await this.database.getRandomEntry();
+    const entry = await this.database.getRandomEntryForGuild(message.guildId);
     await message.reply(entry.quote);
   }
 }

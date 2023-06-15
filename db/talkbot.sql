@@ -1,6 +1,7 @@
 CREATE TABLE talkbot (
   id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   userId TEXT NOT NULL,
+  guildId TEXT NOT NULL,
   quote TEXT NOT NULL,
   UNIQUE(userId, quote)
 );
