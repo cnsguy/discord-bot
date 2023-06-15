@@ -7,12 +7,11 @@ import { LimitedBuffer } from '../util';
 
 const MaxNoteListMessageLength = 2000;
 
-async function listNotes(channel: TextBasedChannel | User, entries: NoteEntry[]): Promise<void> {
+async function listNotes(channel: TextBasedChannel | User, entries: [number, NoteEntry][]): Promise<void> {
   const buffer = new LimitedBuffer(MaxNoteListMessageLength);
 
   for (let i = 0; i < entries.length; ++i) {
-    const entry = entries[i];
-    const id = i + 1;
+    const [id, entry] = entries[i];
     const transformed = `**[${id}]** ${entry.note}\n`;
 
     if (!buffer.canWrite(transformed)) {
@@ -91,7 +90,10 @@ export class NoteModule extends Module {
       return;
     }
 
-    await listNotes(interaction.user, entries);
+    await listNotes(
+      interaction.user,
+      entries.map((entry, i) => [i + 1, entry])
+    );
   }
 
   private async noteDeleteCommand(interaction: CommandInteraction): Promise<void> {
@@ -125,7 +127,8 @@ export class NoteModule extends Module {
 
     const pattern = interaction.args[0];
     const entries = await this.database.getEntriesForSender(interaction.user.id);
-    const filtered = entries.filter((entry) => entry.note.match(new RegExp(pattern, 'i')));
+    const idZipped: [number, NoteEntry][] = entries.map((entry, i) => [i + 1, entry]);
+    const filtered = idZipped.filter(([, entry]) => entry.note.match(new RegExp(pattern, 'i')));
     await listNotes(interaction.channel, filtered);
   }
 
