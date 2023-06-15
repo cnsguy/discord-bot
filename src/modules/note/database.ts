@@ -14,6 +14,10 @@ interface RawNoteEntry {
   readonly senderId: string;
 }
 
+interface RawNoteCountEntry {
+  readonly count: number;
+}
+
 export class NoteEntry {
   public constructor(
     public readonly id: number,
@@ -50,6 +54,16 @@ export class NoteDatabase {
       guildId,
       senderId
     );
+  }
+
+  public async getNumEntriesForSenderInGuild(senderId: string, guildId: string | null): Promise<number> {
+    const raw: RawNoteCountEntry | undefined = await this.database.get(
+      'SELECT COUNT(1) AS count FROM note WHERE senderId = ? AND guildId IS ?',
+      senderId,
+      guildId
+    );
+
+    return raw !== undefined ? raw.count : 0;
   }
 
   public async getEntriesForSenderInGuild(senderId: string, guildId: string | null): Promise<NoteEntry[]> {

@@ -76,7 +76,8 @@ export class NoteModule extends Module {
   private async noteAddCommand(interaction: CommandInteraction): Promise<void> {
     const note = interaction.args[0];
     await this.database.newEntry(note, interaction.guild?.id ?? null, interaction.user.id);
-    await interaction.reply('Note added.');
+    const id = await this.database.getNumEntriesForSenderInGuild(interaction.user.id, interaction.guild?.id ?? null);
+    await interaction.reply(`**[${id}]** ${note}`);
   }
 
   private async noteListCommand(interaction: CommandInteraction): Promise<void> {
