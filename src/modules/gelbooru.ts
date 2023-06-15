@@ -12,6 +12,11 @@ interface Results {
 }
 
 async function handleImageCommon(interaction: CommandInteraction, tags: string): Promise<void> {
+  if (tags.includes('rating:explicit') || tags.includes('rating:questionable')) {
+    await interaction.reply('This command is SFW only.');
+    return;
+  }
+
   const response = await fetch(
     `https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&tags=${encodeURIComponent(tags)}`
   );
