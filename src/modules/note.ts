@@ -2,41 +2,29 @@ import { Module } from '../module';
 import { Bot } from '../bot';
 import { Command, CommandInteraction } from '../command';
 import { NoteDatabase, NoteEntry } from './note/database';
-import { EmbedBuilder, TextBasedChannel } from 'discord.js';
+import { TextBasedChannel } from 'discord.js';
 import { LimitedBuffer } from '../util';
 
 const MaxNoteListMessageLength = 2000;
 
-async function sendEmbed(channel: TextBasedChannel | null, message: string): Promise<void> {
-  if (channel === null) {
-    return;
-  }
-
-  const embed = new EmbedBuilder();
-  embed.setDescription(message);
-  await channel.send({ embeds: [embed] });
-}
-
 async function listNotes(channel: TextBasedChannel, entries: NoteEntry[]): Promise<void> {
   const buffer = new LimitedBuffer(MaxNoteListMessageLength);
 
-  // XXX FIXME badish
   for (let i = 0; i < entries.length; ++i) {
     const entry = entries[i];
     const id = i + 1;
     const transformed = `**[${id}]** ${entry.note}\n`;
 
     if (!buffer.canWrite(transformed)) {
-      await sendEmbed(channel, buffer.content);
+      await channel.send(buffer.content);
       buffer.flush();
     }
 
     buffer.write(transformed);
   }
 
-  // XXX FIXME bad
   if (buffer.content.length > 0) {
-    await sendEmbed(channel, buffer.content);
+    await channel.send(buffer.content);
   }
 }
 
@@ -128,7 +116,6 @@ export class NoteModule extends Module {
     const pattern = interaction.args[0];
     const entries = await this.database.getEntriesForSender(interaction.user.id);
     const filtered = entries.filter((entry) => entry.note.match(new RegExp(pattern, 'i')));
-    await interaction.reply('Results:');
     await listNotes(interaction.channel, filtered);
   }
 }
