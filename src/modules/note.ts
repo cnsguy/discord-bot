@@ -99,7 +99,7 @@ export class NoteModule extends Module {
   private async noteDeleteCommand(interaction: CommandInteraction): Promise<void> {
     const ids = interaction.args;
     const entries = await this.database.getEntriesForSenderInGuild(interaction.user.id, interaction.guild?.id ?? null);
-    const selectedEntries = [];
+    const selectedEntries: [number, NoteEntry][] = [];
 
     for (const idPart of ids) {
       const trimmedIdPart = idPart.trim();
@@ -111,14 +111,13 @@ export class NoteModule extends Module {
       }
 
       const i = id - 1;
-      selectedEntries.push(entries[i]);
+      selectedEntries.push([id, entries[i]]);
     }
 
-    for (const entry of selectedEntries) {
+    for (const [id, entry] of selectedEntries) {
+      await interaction.reply(`[${id}] ${entry.note}`);
       await entry.delete();
     }
-
-    await interaction.reply('Deleted.');
   }
 
   private async noteSearchCommand(interaction: CommandInteraction): Promise<void> {
