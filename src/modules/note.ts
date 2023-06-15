@@ -2,12 +2,12 @@ import { Module } from '../module';
 import { Bot } from '../bot';
 import { Command, CommandInteraction } from '../command';
 import { NoteDatabase, NoteEntry } from './note/database';
-import { TextBasedChannel } from 'discord.js';
+import { TextBasedChannel, User } from 'discord.js';
 import { LimitedBuffer } from '../util';
 
 const MaxNoteListMessageLength = 2000;
 
-async function listNotes(channel: TextBasedChannel, entries: NoteEntry[]): Promise<void> {
+async function listNotes(channel: TextBasedChannel | User, entries: NoteEntry[]): Promise<void> {
   const buffer = new LimitedBuffer(MaxNoteListMessageLength);
 
   for (let i = 0; i < entries.length; ++i) {
@@ -91,8 +91,7 @@ export class NoteModule extends Module {
       return;
     }
 
-    await interaction.reply('Notes:');
-    await listNotes(interaction.channel, entries);
+    await listNotes(interaction.user, entries);
   }
 
   private async noteDeleteCommand(interaction: CommandInteraction): Promise<void> {
