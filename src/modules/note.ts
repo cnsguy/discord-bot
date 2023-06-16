@@ -1,13 +1,19 @@
 import { Module } from '../module';
 import { Bot } from '../bot';
-import { Command, CommandInteraction } from '../command';
 import { NoteDatabase, NoteEntry } from './note/database';
-import { TextBasedChannel, User } from 'discord.js';
+import {
+  ChatInputCommandInteraction,
+  SlashCommandAttachmentOption,
+  SlashCommandBuilder,
+  SlashCommandIntegerOption,
+  SlashCommandStringOption,
+  TextBasedChannel,
+} from 'discord.js';
 import { LimitedBuffer } from '../util';
 
 const MaxNoteListMessageLength = 2000;
 
-async function listNotes(channel: TextBasedChannel | User, entries: [number, NoteEntry][]): Promise<void> {
+async function listNotes(channel: TextBasedChannel, entries: [number, NoteEntry][]): Promise<void> {
   const buffer = new LimitedBuffer(MaxNoteListMessageLength);
 
   for (let i = 0; i < entries.length; ++i) {
@@ -31,36 +37,43 @@ export class NoteModule extends Module {
   private readonly database: NoteDatabase;
 
   private constructor(private readonly bot: Bot) {
-    bot.registerCommand(
-      new Command('n/n+', 'Add a note to your list', '<note>', 1, 1, (interaction) => this.noteAddCommand(interaction))
-    );
+    const noteAddCommand = new SlashCommandBuilder()
+      .setName('note-add')
+      .setDescription('Add a note to your list')
+      .addStringOption(new SlashCommandStringOption().setName('note').setDescription('Note to add').setRequired(true))
+      .toJSON();
 
-    bot.registerCommand(
-      new Command('n/nl', 'List your notes', '-', 0, 0, (interaction) => this.noteListCommand(interaction))
-    );
-
-    bot.registerCommand(
-      new Command('n/n-', 'Delete the specified notes by IDs', '<ids...>', 1, null, (interaction) =>
-        this.noteDeleteCommand(interaction)
+    const noteDeleteCommand = new SlashCommandBuilder()
+      .setName('note-delete')
+      .setDescription('Delete a note from your list')
+      .addIntegerOption(
+        new SlashCommandIntegerOption().setName('id').setDescription('ID of note to delete').setRequired(true)
       )
-    );
+      .toJSON();
 
-    bot.registerCommand(
-      new Command('n/n?', 'Search for a given pattern in your notes', '<pattern>', 1, 1, (interaction) =>
-        this.noteSearchCommand(interaction)
-      )
-    );
+    const noteListCommand = new SlashCommandBuilder().setName('note-list').setDescription('List your notes').toJSON();
 
-    bot.registerCommand(
-      new Command(
-        '!note-import',
-        'Mass import notes from bpa.st, one per each line',
-        '<paste id>',
-        1,
-        1,
-        (interaction) => this.noteImportCommand(interaction)
+    const noteSearchCommand = new SlashCommandBuilder()
+      .setName('note-search')
+      .setDescription('Search between your notes via regex')
+      .addIntegerOption(
+        new SlashCommandIntegerOption().setName('regex').setDescription('Search regex').setRequired(true)
       )
-    );
+      .toJSON();
+
+    const noteImportCommand = new SlashCommandBuilder()
+      .setName('note-import')
+      .setDescription('Import your notes from IRC')
+      .addAttachmentOption(
+        new SlashCommandAttachmentOption().setName('notes').setDescription('Notes to import').setRequired(true)
+      )
+      .toJSON();
+
+    bot.registerSlashCommand(noteAddCommand, (interaction) => this.noteAddCommand(interaction));
+    bot.registerSlashCommand(noteDeleteCommand, (interaction) => this.noteDeleteCommand(interaction));
+    bot.registerSlashCommand(noteListCommand, (interaction) => this.noteListCommand(interaction));
+    bot.registerSlashCommand(noteSearchCommand, (interaction) => this.noteSearchCommand(interaction));
+    bot.registerSlashCommand(noteImportCommand, (interaction) => this.noteImportCommand(interaction));
 
     super();
     this.bot = bot;
@@ -71,15 +84,17 @@ export class NoteModule extends Module {
     return new NoteModule(bot);
   }
 
-  private async noteAddCommand(interaction: CommandInteraction): Promise<void> {
-    const note = interaction.args[0];
-    await this.database.newEntry(note, interaction.user.id);
+  private async noteAddCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const note = interaction.options.getString('note')!;
     const id = await this.database.getNumEntriesForSenderInGuild(interaction.user.id);
+    await this.database.newEntry(note, interaction.user.id);
     await interaction.reply(`**[${id}]** ${note}`);
   }
 
-  private async noteListCommand(interaction: CommandInteraction): Promise<void> {
+  private async noteListCommand(interaction: ChatInputCommandInteraction): Promise<void> {
     if (interaction.channel === null) {
+      await interaction.reply('This command is only available in a channel');
       return;
     }
 
@@ -91,59 +106,47 @@ export class NoteModule extends Module {
     }
 
     await listNotes(
-      interaction.user,
+      interaction.channel,
       entries.map((entry, i) => [i + 1, entry])
     );
   }
 
-  private async noteDeleteCommand(interaction: CommandInteraction): Promise<void> {
-    const ids = interaction.args;
+  private async noteDeleteCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const id = interaction.options.getInteger('id')!;
     const entries = await this.database.getEntriesForSender(interaction.user.id);
-    const selectedEntries: [number, NoteEntry][] = [];
 
-    for (const idPart of ids) {
-      const trimmedIdPart = idPart.trim();
-      const id = Number(trimmedIdPart);
-
-      if (Number.isNaN(id) || id < 1 || id > entries.length) {
-        await interaction.reply(`Invalid ID: ${trimmedIdPart}`);
-        return;
-      }
-
-      const i = id - 1;
-      selectedEntries.push([id, entries[i]]);
+    if (id > entries.length || id < 0) {
+      await interaction.reply(`No entry with id ${id} exists.`);
+      return;
     }
 
-    for (const [id, entry] of selectedEntries) {
-      await interaction.reply(`**[${id}]** ${entry.note}`);
-      await entry.delete();
-    }
+    await entries[id - 1].delete();
+    await interaction.reply('Deleted.');
   }
 
-  private async noteSearchCommand(interaction: CommandInteraction): Promise<void> {
+  private async noteSearchCommand(interaction: ChatInputCommandInteraction): Promise<void> {
     if (interaction.channel === null) {
       return;
     }
 
-    const pattern = interaction.args[0];
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const regex = interaction.options.getString('regex')!;
     const entries = await this.database.getEntriesForSender(interaction.user.id);
-    const idZipped: [number, NoteEntry][] = entries.map((entry, i) => [i + 1, entry]);
-    const filtered = idZipped.filter(([, entry]) => entry.note.match(new RegExp(pattern, 'i')));
+    const zipped: [number, NoteEntry][] = entries.map((entry, i) => [i, entry]);
+    const filtered = zipped.filter(([, entry]) => entry.note.match(new RegExp(regex, 'i')));
+    await interaction.reply('Results:');
     await listNotes(interaction.channel, filtered);
   }
 
-  private async noteImportCommand(interaction: CommandInteraction): Promise<void> {
-    if (interaction.channel === null) {
-      return;
-    }
-
-    const pasteId = interaction.args[0];
-    const link = `https://bpa.st/raw/${encodeURIComponent(pasteId)}`;
-    const response = await fetch(link);
+  private async noteImportCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const url = interaction.options.getAttachment('notes')!.url;
+    const response = await fetch(url);
     const decoder = new TextDecoder('utf-8');
 
     if (response.status != 200) {
-      await interaction.reply(`Failed to grab notes from ${link}; server returned error code ${response.status}`);
+      await interaction.reply(`Failed to grab notes from attachment; server returned error code ${response.status}`);
       return;
     }
 

@@ -1,6 +1,7 @@
 import { Module } from '../module';
 import { Bot } from '../bot';
-import { Command, CommandInteraction } from '../command';
+import { ChatInputCommandInteraction, EmbedBuilder, SlashCommandBuilder } from 'discord.js';
+import assert from 'assert';
 
 interface ResultEntry {
   readonly id: number;
@@ -11,88 +12,78 @@ interface Results {
   readonly post?: ResultEntry[];
 }
 
-async function handleImageCommon(interaction: CommandInteraction, tags: string): Promise<void> {
-  if (tags.includes('rating:explicit') || tags.includes('rating:questionable')) {
-    await interaction.reply('This command is SFW only.');
-    return;
+class CommandInfo {
+  public constructor(public readonly tags: string, public readonly description: string) {
+    this.tags = tags;
+    this.description = description;
   }
+}
+
+async function handleImageCommon(interaction: ChatInputCommandInteraction, tags: string): Promise<void> {
+  await interaction.deferReply();
 
   const response = await fetch(
     `https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&tags=${encodeURIComponent(tags)}`
   );
 
   if (response.status != 200) {
-    await interaction.reply(`Failed to get image; server returned error code ${response.status}`);
+    await interaction.followUp(`Failed to get image; server returned error code ${response.status}`);
     return;
   }
 
   const json = JSON.parse(await response.text()) as Results;
 
   if (json.post === undefined || json.post.length == 0) {
-    await interaction.reply('No results.');
+    await interaction.followUp('No results.');
     return;
   }
 
   const imageUrl = json.post[0].file_url;
+  const id = json.post[0].id;
 
   if (imageUrl === undefined) {
-    await interaction.reply(`Failed to get image; no results?`);
+    await interaction.followUp(`Failed to get image; no results?`);
     return;
   }
 
-  await interaction.reply(imageUrl);
+  const postUrl = `https://gelbooru.com/index.php?page=post&s=view&id=${id}`;
+  const embed = new EmbedBuilder().setTitle(`Post number ${id}`).setURL(postUrl).setImage(imageUrl);
+  await interaction.followUp({ embeds: [embed] });
 }
 
 export class GelbooruModule extends Module {
+  private readonly premadeCommands: Map<string, CommandInfo>;
+
   private constructor(bot: Bot) {
     super();
 
-    bot.registerCommand(
-      new Command('!explosion', 'Random Megumin picture from Gelbooru', '-', 0, 0, (interaction) =>
-        this.explosionCommand(interaction)
-      )
+    this.premadeCommands = new Map();
+    this.premadeCommands.set(
+      'explosion',
+      new CommandInfo('rating:general sort:random megumin', 'Random Megumin picture from Gelbooru')
+    );
+    this.premadeCommands.set(
+      'useless',
+      new CommandInfo('rating:general sort:random aqua_(konosuba)', 'Random Aqua picture from Gelbooru')
+    );
+    this.premadeCommands.set(
+      'illya',
+      new CommandInfo('rating:general sort:random illyasviel_von_einzbern', 'Random Illya picture from Gelbooru')
     );
 
-    bot.registerCommand(
-      new Command('!useless', 'Random Aqua picture from Gelbooru', '-', 0, 0, (interaction) =>
-        this.uselessCommand(interaction)
-      )
-    );
-
-    bot.registerCommand(
-      new Command('!illya', 'Random Illya picture from Gelbooru', '-', 0, 0, (interaction) =>
-        this.illyaCommand(interaction)
-      )
-    );
-
-    /*
-    bot.registerCommand(
-      new Command('!gelbooru', 'Search gelbooru', '<tags>', 1, 1, (interaction) => this.gelbooruCommand(interaction))
-    );
-    */
+    for (const [name, info] of this.premadeCommands.entries()) {
+      const command = new SlashCommandBuilder().setName(name).setDescription(info.description).toJSON();
+      bot.registerSlashCommand(command, (interaction) => this.premadeCommand(interaction));
+    }
   }
 
   public static load(bot: Bot): GelbooruModule {
     return new GelbooruModule(bot);
   }
 
-  private async explosionCommand(interaction: CommandInteraction): Promise<void> {
-    await handleImageCommon(interaction, `rating:general sort:random megumin`);
+  private async premadeCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+    const info = this.premadeCommands.get(interaction.commandName);
+    assert(info !== undefined);
+    await handleImageCommon(interaction, info.tags);
   }
-
-  private async uselessCommand(interaction: CommandInteraction): Promise<void> {
-    await handleImageCommon(interaction, `rating:general sort:random aqua_(konosuba)`);
-  }
-
-  private async illyaCommand(interaction: CommandInteraction): Promise<void> {
-    await handleImageCommon(interaction, `rating:general sort:random illyasviel_von_einzbern`);
-  }
-
-  /*
-  private async gelbooruCommand(interaction: CommandInteraction): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const tags = interaction.args[0];
-    await handleImageCommon(interaction, `rating:general sort:random ${tags}`);
-  }
-  */
 }
