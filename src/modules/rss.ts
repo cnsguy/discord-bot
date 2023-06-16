@@ -22,6 +22,8 @@ export class RSSModule extends Module {
   private readonly database: RSSDatabase;
 
   private constructor(private readonly bot: Bot) {
+    super();
+
     const addSubcommand = new SlashCommandSubcommandBuilder()
       .setName('add')
       .setDescription('Monitor a link for RSS updates')
@@ -60,7 +62,6 @@ export class RSSModule extends Module {
 
     bot.registerSlashCommand(rssCommand, (interaction) => this.rssCommand(interaction));
 
-    super();
     this.bot = bot;
     this.database = new RSSDatabase(this.bot.database);
     setInterval(() => void this.timerTick(), 30000);

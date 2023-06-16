@@ -38,6 +38,7 @@ export class NoteModule extends Module {
   private readonly database: NoteDatabase;
 
   private constructor(private readonly bot: Bot) {
+    super();
     const addSubcommand = new SlashCommandSubcommandBuilder()
       .setName('add')
       .setDescription('Add a note to your list')
@@ -76,7 +77,6 @@ export class NoteModule extends Module {
 
     bot.registerSlashCommand(noteCommand, (interaction) => this.noteCommand(interaction));
 
-    super();
     this.bot = bot;
     this.database = new NoteDatabase(this.bot.database);
   }

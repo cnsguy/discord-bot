@@ -5,7 +5,6 @@ import { ChatInputCommandInteraction, SlashCommandBuilder, SlashCommandStringOpt
 export class LookupModule extends Module {
   private constructor(private readonly bot: Bot) {
     super();
-    this.bot = bot;
 
     const lookupCommand = new SlashCommandBuilder()
       .setName('lookup')
@@ -21,6 +20,7 @@ export class LookupModule extends Module {
 
     bot.registerSlashCommand(lookupCommand, (interaction) => this.lookupCommand(interaction));
     bot.registerSlashCommand(reverseLookupCommand, (interaction) => this.reverseLookupCommand(interaction));
+    this.bot = bot;
   }
 
   public static load(bot: Bot): LookupModule {

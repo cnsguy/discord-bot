@@ -7,8 +7,8 @@ export class TalkbotModule extends Module {
   private readonly database: TalkbotDatabase;
 
   private constructor(private readonly bot: Bot) {
-    bot.on(BotEventNames.MessageCreate, (message) => void this.onMessageCreate(message));
     super();
+    bot.on(BotEventNames.MessageCreate, (message) => void this.onMessageCreate(message));
     this.database = new TalkbotDatabase(this.bot.database);
     this.bot = bot;
   }
