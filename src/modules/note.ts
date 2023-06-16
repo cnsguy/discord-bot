@@ -6,6 +6,7 @@ import {
   SlashCommandAttachmentOption,
   SlashCommandBuilder,
   SlashCommandStringOption,
+  SlashCommandSubcommandBuilder,
   TextBasedChannel,
 } from 'discord.js';
 import { LimitedBuffer } from '../util';
@@ -36,39 +37,43 @@ export class NoteModule extends Module {
   private readonly database: NoteDatabase;
 
   private constructor(private readonly bot: Bot) {
-    const noteAddCommand = new SlashCommandBuilder()
-      .setName('note-add')
+    const addSubcommand = new SlashCommandSubcommandBuilder()
+      .setName('add')
       .setDescription('Add a note to your list')
-      .addStringOption(new SlashCommandStringOption().setName('note').setDescription('Note to add').setRequired(true))
-      .toJSON();
+      .addStringOption(new SlashCommandStringOption().setName('note').setDescription('Note to add').setRequired(true));
 
-    const noteDeleteCommand = new SlashCommandBuilder()
-      .setName('note-delete')
+    const deleteSubcommand = new SlashCommandSubcommandBuilder()
+      .setName('delete')
       .setDescription('Delete a note from your list')
-      .addStringOption(new SlashCommandStringOption().setName('ids').setDescription('IDs to delete').setRequired(true))
-      .toJSON();
+      .addStringOption(new SlashCommandStringOption().setName('ids').setDescription('IDs to delete').setRequired(true));
 
-    const noteListCommand = new SlashCommandBuilder().setName('note-list').setDescription('List your notes').toJSON();
+    const listSubcommand = new SlashCommandSubcommandBuilder().setName('list').setDescription('List your notes');
 
-    const noteSearchCommand = new SlashCommandBuilder()
-      .setName('note-search')
+    const searchSubcommand = new SlashCommandSubcommandBuilder()
+      .setName('search')
       .setDescription('Search between your notes via regex')
-      .addStringOption(new SlashCommandStringOption().setName('regex').setDescription('Search regex').setRequired(true))
-      .toJSON();
+      .addStringOption(
+        new SlashCommandStringOption().setName('regex').setDescription('Search regex').setRequired(true)
+      );
 
-    const noteImportCommand = new SlashCommandBuilder()
-      .setName('note-import')
+    const importSubcommand = new SlashCommandSubcommandBuilder()
+      .setName('import')
       .setDescription('Import your notes from IRC')
       .addAttachmentOption(
         new SlashCommandAttachmentOption().setName('notes').setDescription('Notes to import').setRequired(true)
-      )
+      );
+
+    const noteCommand = new SlashCommandBuilder()
+      .setName('note')
+      .setDescription('Note commands')
+      .addSubcommand(addSubcommand)
+      .addSubcommand(deleteSubcommand)
+      .addSubcommand(listSubcommand)
+      .addSubcommand(searchSubcommand)
+      .addSubcommand(importSubcommand)
       .toJSON();
 
-    bot.registerSlashCommand(noteAddCommand, (interaction) => this.noteAddCommand(interaction));
-    bot.registerSlashCommand(noteDeleteCommand, (interaction) => this.noteDeleteCommand(interaction));
-    bot.registerSlashCommand(noteListCommand, (interaction) => this.noteListCommand(interaction));
-    bot.registerSlashCommand(noteSearchCommand, (interaction) => this.noteSearchCommand(interaction));
-    bot.registerSlashCommand(noteImportCommand, (interaction) => this.noteImportCommand(interaction));
+    bot.registerSlashCommand(noteCommand, (interaction) => this.noteCommand(interaction));
 
     super();
     this.bot = bot;
@@ -79,7 +84,7 @@ export class NoteModule extends Module {
     return new NoteModule(bot);
   }
 
-  private async noteAddCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async noteAddSubcommand(interaction: ChatInputCommandInteraction): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const note = interaction.options.getString('note')!;
     const id = await this.database.getNumEntriesForSenderInGuild(interaction.user.id);
@@ -87,7 +92,7 @@ export class NoteModule extends Module {
     await interaction.reply(`**[${id}]** ${note}`);
   }
 
-  private async noteListCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async noteListSubcommand(interaction: ChatInputCommandInteraction): Promise<void> {
     if (interaction.channel === null) {
       await interaction.reply('This command is only available in a channel');
       return;
@@ -106,7 +111,7 @@ export class NoteModule extends Module {
     );
   }
 
-  private async noteDeleteCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async noteDeleteSubcommand(interaction: ChatInputCommandInteraction): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const ids = interaction.options.getString('ids')!.split(' ');
     const entries = await this.database.getEntriesForSender(interaction.user.id);
@@ -135,7 +140,7 @@ export class NoteModule extends Module {
     await interaction.reply('Deleted.');
   }
 
-  private async noteSearchCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async noteSearchSubcommand(interaction: ChatInputCommandInteraction): Promise<void> {
     if (interaction.channel === null) {
       return;
     }
@@ -149,7 +154,7 @@ export class NoteModule extends Module {
     await listNotes(interaction.channel, filtered);
   }
 
-  private async noteImportCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async noteImportSubcommand(interaction: ChatInputCommandInteraction): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const url = interaction.options.getAttachment('notes')!.url;
     const response = await fetch(url);
@@ -175,5 +180,24 @@ export class NoteModule extends Module {
     }
 
     await interaction.reply(`Imported ${num} note(s).`);
+  }
+
+  private async noteCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+    const subcommand = interaction.options.getSubcommand(true);
+
+    switch (subcommand) {
+      case 'add':
+        return this.noteAddSubcommand(interaction);
+      case 'delete':
+        return this.noteDeleteSubcommand(interaction);
+      case 'list':
+        return this.noteListSubcommand(interaction);
+      case 'search':
+        return this.noteSearchSubcommand(interaction);
+      case 'import':
+        return this.noteImportSubcommand(interaction);
+      default:
+        throw new Error(`Invalid subcommand: ${subcommand}`);
+    }
   }
 }
