@@ -17,8 +17,7 @@ const MaxNoteListMessageLength = 2000;
 async function listNotes(channel: TextBasedChannel, entries: [number, NoteEntry][]): Promise<void> {
   const buffer = new LimitedBuffer(MaxNoteListMessageLength);
 
-  for (let i = 0; i < entries.length; ++i) {
-    const [id, entry] = entries[i];
+  for (const [id, entry] of entries) {
     const transformed = `**[${id}]** ${entry.note}\n`;
 
     if (!buffer.canWrite(transformed)) {
@@ -29,6 +28,7 @@ async function listNotes(channel: TextBasedChannel, entries: [number, NoteEntry]
     buffer.write(transformed);
   }
 
+  // XXX i really need to think of some better way to do this
   if (buffer.content.length > 0) {
     await channel.send({ embeds: [new EmbedBuilder().setDescription(buffer.content)] });
   }
