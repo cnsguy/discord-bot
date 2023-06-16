@@ -7,6 +7,8 @@ import {
   EmbedBuilder,
   SlashCommandBuilder,
   SlashCommandStringOption,
+  SlashCommandSubcommandBuilder,
+  SlashCommandSubcommandGroupBuilder,
   TextBasedChannel,
 } from 'discord.js';
 import { RSSDatabase } from './rss/database';
@@ -20,36 +22,43 @@ export class RSSModule extends Module {
   private readonly database: RSSDatabase;
 
   private constructor(private readonly bot: Bot) {
-    const rssMonitorLinkCommand = new SlashCommandBuilder()
-      .setName('rss-monitor-link')
+    const addSubcommand = new SlashCommandSubcommandBuilder()
+      .setName('add')
       .setDescription('Monitor a link for RSS updates')
       .addStringOption(
         new SlashCommandStringOption().setName('link').setDescription('Link to monitor').setRequired(true)
       )
       .addStringOption(new SlashCommandStringOption().setName('title-regex').setDescription('Title regex'))
-      .addStringOption(new SlashCommandStringOption().setName('content-regex').setDescription('Content regex'))
-      .toJSON();
+      .addStringOption(new SlashCommandStringOption().setName('content-regex').setDescription('Content regex'));
 
-    const rssMonitorListCommand = new SlashCommandBuilder()
-      .setName('rss-monitor-list')
-      .setDescription('List all RSS links monitored in the current channel')
-      .toJSON();
+    const listSubcommand = new SlashCommandSubcommandBuilder()
+      .setName('list')
+      .setDescription('List all RSS links monitored in the current channel');
 
-    const rssUnmonitorCommand = new SlashCommandBuilder()
-      .setName('rss-unmonitor')
+    const deleteIdSubcommand = new SlashCommandSubcommandBuilder()
+      .setName('id')
       .setDescription('Delete an RSS monitor entry from the database by ID')
-      .addStringOption(new SlashCommandStringOption().setName('ids').setDescription('IDs to delete').setRequired(true))
+      .addStringOption(new SlashCommandStringOption().setName('ids').setDescription('IDs to delete').setRequired(true));
+
+    const deleteAllSubcommand = new SlashCommandSubcommandBuilder()
+      .setName('all')
+      .setDescription('Delete all RSS monitor entries for the current channel');
+
+    const deleteSubcommandGroup = new SlashCommandSubcommandGroupBuilder()
+      .setName('delete')
+      .setDescription('Deletion commands')
+      .addSubcommand(deleteIdSubcommand)
+      .addSubcommand(deleteAllSubcommand);
+
+    const rssCommand = new SlashCommandBuilder()
+      .setName('rss')
+      .setDescription('RSS commands')
+      .addSubcommand(addSubcommand)
+      .addSubcommand(listSubcommand)
+      .addSubcommandGroup(deleteSubcommandGroup)
       .toJSON();
 
-    const rssUnmonitorAllCommand = new SlashCommandBuilder()
-      .setName('rss-unmonitor-all')
-      .setDescription('Delete all RSS monitor entries for the current channel')
-      .toJSON();
-
-    bot.registerSlashCommand(rssMonitorLinkCommand, (interaction) => this.rssMonitorLinkCommand(interaction));
-    bot.registerSlashCommand(rssMonitorListCommand, (interaction) => this.rssMonitorListCommand(interaction));
-    bot.registerSlashCommand(rssUnmonitorCommand, (interaction) => this.rssUnmonitorCommand(interaction));
-    bot.registerSlashCommand(rssUnmonitorAllCommand, (interaction) => this.rssUnmonitorAllCommand(interaction));
+    bot.registerSlashCommand(rssCommand, (interaction) => this.rssCommand(interaction));
 
     super();
     this.bot = bot;
@@ -143,7 +152,7 @@ export class RSSModule extends Module {
     await channel.send({ embeds: [builder] });
   }
 
-  private async rssMonitorLinkCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async rssAddSubcommand(interaction: ChatInputCommandInteraction): Promise<void> {
     if (!(await this.bot.checkInteractionPermissions(interaction, [ManageGuild]))) {
       return;
     }
@@ -186,7 +195,7 @@ export class RSSModule extends Module {
     await interaction.reply('Added.');
   }
 
-  private async rssMonitorListCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async rssListSubcommand(interaction: ChatInputCommandInteraction): Promise<void> {
     if (interaction.channel === null) {
       await interaction.reply('This command is only available in a channel');
       return;
@@ -220,7 +229,7 @@ export class RSSModule extends Module {
     });
   }
 
-  private async rssUnmonitorCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async rssDeleteIdSubcommand(interaction: ChatInputCommandInteraction): Promise<void> {
     if (!(await this.bot.checkInteractionPermissions(interaction, [ManageGuild]))) {
       return;
     }
@@ -258,7 +267,7 @@ export class RSSModule extends Module {
     await interaction.reply('Deleted.');
   }
 
-  private async rssUnmonitorAllCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async rssDeleteAllSubcommand(interaction: ChatInputCommandInteraction): Promise<void> {
     if (!(await this.bot.checkInteractionPermissions(interaction, [ManageGuild]))) {
       return;
     }
@@ -280,5 +289,33 @@ export class RSSModule extends Module {
     }
 
     await interaction.reply('All entries removed.');
+  }
+
+  private async rssCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+    const subcommand = interaction.options.getSubcommand(true);
+    const subcommandGroup = interaction.options.getSubcommandGroup();
+
+    switch (subcommandGroup) {
+      case null: {
+        switch (subcommand) {
+          case 'add':
+            return this.rssAddSubcommand(interaction);
+          case 'list':
+            return this.rssListSubcommand(interaction);
+          default:
+            throw new Error(`Invalid subcommand: ${subcommand}`);
+        }
+      }
+      case 'delete': {
+        switch (subcommand) {
+          case 'id':
+            return this.rssDeleteIdSubcommand(interaction);
+          case 'all':
+            return this.rssDeleteAllSubcommand(interaction);
+          default:
+            throw new Error(`Invalid subcommand: ${subcommand}`);
+        }
+      }
+    }
   }
 }
