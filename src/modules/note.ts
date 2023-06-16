@@ -3,6 +3,7 @@ import { Bot } from '../bot';
 import { NoteDatabase, NoteEntry } from './note/database';
 import {
   ChatInputCommandInteraction,
+  EmbedBuilder,
   SlashCommandAttachmentOption,
   SlashCommandBuilder,
   SlashCommandStringOption,
@@ -21,7 +22,7 @@ async function listNotes(channel: TextBasedChannel, entries: [number, NoteEntry]
     const transformed = `**[${id}]** ${entry.note}\n`;
 
     if (!buffer.canWrite(transformed)) {
-      await channel.send(buffer.content);
+      await channel.send({ embeds: [new EmbedBuilder().setDescription(buffer.content)] });
       buffer.flush();
     }
 
@@ -29,7 +30,7 @@ async function listNotes(channel: TextBasedChannel, entries: [number, NoteEntry]
   }
 
   if (buffer.content.length > 0) {
-    await channel.send(buffer.content);
+    await channel.send({ embeds: [new EmbedBuilder().setDescription(buffer.content)] });
   }
 }
 
