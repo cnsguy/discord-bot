@@ -154,14 +154,16 @@ export class NoteModule extends Module {
     let num = 0;
 
     for (const note of content.split('\n')) {
-      if (note.length === 0) {
+      const match = note.match(/^\[\d+\]\[\d+ \d+\] (.*)\s*$/);
+
+      if (match === null || match[1] === undefined) {
         continue;
       }
 
-      await this.database.newEntry(note, interaction.user.id);
+      await this.database.newEntry(match[1], interaction.user.id);
       num += 1;
     }
 
-    await interaction.reply(`Imported ${num} notes.`);
+    await interaction.reply(`Imported ${num} note(s).`);
   }
 }
