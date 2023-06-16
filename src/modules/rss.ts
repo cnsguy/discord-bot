@@ -6,7 +6,6 @@ import {
   ChatInputCommandInteraction,
   EmbedBuilder,
   SlashCommandBuilder,
-  SlashCommandIntegerOption,
   SlashCommandStringOption,
   TextBasedChannel,
 } from 'discord.js';
@@ -36,10 +35,10 @@ export class RSSModule extends Module {
       .setDescription('List all RSS links monitored in the current channel')
       .toJSON();
 
-    const rssUnmonitorIdCommand = new SlashCommandBuilder()
-      .setName('rss-unmonitor-id')
+    const rssUnmonitorCommand = new SlashCommandBuilder()
+      .setName('rss-unmonitor')
       .setDescription('Delete an RSS monitor entry from the database by ID')
-      .addIntegerOption(new SlashCommandIntegerOption().setName('id').setDescription('ID to delete').setRequired(true))
+      .addStringOption(new SlashCommandStringOption().setName('ids').setDescription('IDs to delete').setRequired(true))
       .toJSON();
 
     const rssUnmonitorAllCommand = new SlashCommandBuilder()
@@ -49,7 +48,7 @@ export class RSSModule extends Module {
 
     bot.registerSlashCommand(rssMonitorLinkCommand, (interaction) => this.rssMonitorLinkCommand(interaction));
     bot.registerSlashCommand(rssMonitorListCommand, (interaction) => this.rssMonitorListCommand(interaction));
-    bot.registerSlashCommand(rssUnmonitorIdCommand, (interaction) => this.rssUnmonitorIdCommand(interaction));
+    bot.registerSlashCommand(rssUnmonitorCommand, (interaction) => this.rssUnmonitorCommand(interaction));
     bot.registerSlashCommand(rssUnmonitorAllCommand, (interaction) => this.rssUnmonitorAllCommand(interaction));
 
     super();
@@ -221,7 +220,7 @@ export class RSSModule extends Module {
     });
   }
 
-  private async rssUnmonitorIdCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async rssUnmonitorCommand(interaction: ChatInputCommandInteraction): Promise<void> {
     if (!(await this.bot.checkInteractionPermissions(interaction, [ManageGuild]))) {
       return;
     }
@@ -232,15 +231,30 @@ export class RSSModule extends Module {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const id = interaction.options.getInteger('id')!;
+    const ids = interaction.options.getString('ids')!.split(' ');
     const entries = await this.database.getEntriesForChannel(interaction.channelId);
+    const toDelete = [];
 
-    if (id > entries.length || id < 0) {
-      await interaction.reply(`No entry with id ${id} exists.`);
-      return;
+    for (const idString of ids) {
+      const id = Number(idString);
+
+      if (Number.isNaN(id)) {
+        await interaction.reply(`Invalid ID '${idString}'`);
+        return;
+      }
+
+      if (id > entries.length || id < 0) {
+        await interaction.reply(`No entry with id ${id} exists.`);
+        return;
+      }
+
+      toDelete.push(entries[id - 1]);
     }
 
-    await entries[id - 1].delete();
+    for (const entry of toDelete) {
+      await entry.delete();
+    }
+
     await interaction.reply('Deleted.');
   }
 

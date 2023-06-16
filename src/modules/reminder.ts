@@ -6,7 +6,6 @@ import {
   SlashCommandBuilder,
   SlashCommandStringOption,
   SlashCommandUserOption,
-  SlashCommandIntegerOption,
 } from 'discord.js';
 import { ReminderDatabase } from './reminder/database';
 import { splitEvery } from 'ramda';
@@ -146,20 +145,24 @@ export class DateModule extends Module {
     const reminderAdminListCommand = new SlashCommandBuilder()
       .setName('reminder-admin-list')
       .setDescription('List all reminders in the current server for a given user')
-      .addUserOption(new SlashCommandUserOption().setName('user').setDescription('User to list reminders for'))
+      .addUserOption(
+        new SlashCommandUserOption().setName('user').setDescription('User to list reminders for').setRequired(true)
+      )
       .toJSON();
 
     const reminderDelete = new SlashCommandBuilder()
       .setName('reminder-delete')
       .setDescription('Delete the specified reminder by ID')
-      .addIntegerOption(new SlashCommandIntegerOption().setName('id').setDescription('ID to delete'))
+      .addStringOption(new SlashCommandStringOption().setName('ids').setDescription('IDs to delete').setRequired(true))
       .toJSON();
 
     const reminderAdminDeleteCommand = new SlashCommandBuilder()
       .setName('reminder-admin-delete')
       .setDescription('Delete the specified reminder by ID for a given user')
-      .addUserOption(new SlashCommandUserOption().setName('user').setDescription('User to delete the reminder for'))
-      .addIntegerOption(new SlashCommandIntegerOption().setName('id').setDescription('ID to delete'))
+      .addUserOption(
+        new SlashCommandUserOption().setName('user').setDescription('User to delete the reminder for').setRequired(true)
+      )
+      .addStringOption(new SlashCommandStringOption().setName('ids').setDescription('IDs to delete').setRequired(true))
       .toJSON();
 
     bot.registerSlashCommand(reminderInCommand, (interaction) => this.reminderInCommand(interaction));
@@ -363,22 +366,38 @@ export class DateModule extends Module {
     return this.reminderList(interaction, user.id);
   }
 
-  private async reminderDelete(interaction: ChatInputCommandInteraction, userId: string, id: number): Promise<void> {
+  private async reminderDeleteCommon(interaction: ChatInputCommandInteraction, userId: string): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const ids = interaction.options.getString('ids')!.split(' ');
     const entries = await this.database.getEntriesForSenderInGuild(userId, interaction.guildId);
+    const toDelete = [];
 
-    if (id > entries.length || id < 0) {
-      await interaction.reply(`No entry with id ${id} exists.`);
-      return;
+    for (const idString of ids) {
+      const id = Number(idString);
+
+      if (Number.isNaN(id)) {
+        await interaction.reply(`Invalid ID '${idString}'`);
+        return;
+      }
+
+      if (id > entries.length || id < 0) {
+        await interaction.reply(`No entry with id ${id} exists.`);
+        return;
+      }
+
+      toDelete.push(entries[id - 1]);
     }
 
-    await entries[id - 1].delete();
+    for (const entry of toDelete) {
+      await entry.delete();
+    }
+
     await interaction.reply('Deleted.');
   }
 
   private async reminderDeleteCommand(interaction: ChatInputCommandInteraction): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const id = interaction.options.getInteger('id')!;
-    return this.reminderDelete(interaction, interaction.user.id, id);
+    return this.reminderDeleteCommon(interaction, interaction.user.id);
   }
 
   private async reminderAdminDeleteCommand(interaction: ChatInputCommandInteraction): Promise<void> {
@@ -388,8 +407,6 @@ export class DateModule extends Module {
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const user = interaction.options.getUser('user')!;
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const id = interaction.options.getInteger('id')!;
-    return this.reminderDelete(interaction, user.id, id);
+    return this.reminderDeleteCommon(interaction, user.id);
   }
 }

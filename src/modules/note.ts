@@ -5,7 +5,6 @@ import {
   ChatInputCommandInteraction,
   SlashCommandAttachmentOption,
   SlashCommandBuilder,
-  SlashCommandIntegerOption,
   SlashCommandStringOption,
   TextBasedChannel,
 } from 'discord.js';
@@ -46,9 +45,7 @@ export class NoteModule extends Module {
     const noteDeleteCommand = new SlashCommandBuilder()
       .setName('note-delete')
       .setDescription('Delete a note from your list')
-      .addIntegerOption(
-        new SlashCommandIntegerOption().setName('id').setDescription('ID of note to delete').setRequired(true)
-      )
+      .addStringOption(new SlashCommandStringOption().setName('ids').setDescription('IDs to delete').setRequired(true))
       .toJSON();
 
     const noteListCommand = new SlashCommandBuilder().setName('note-list').setDescription('List your notes').toJSON();
@@ -111,15 +108,30 @@ export class NoteModule extends Module {
 
   private async noteDeleteCommand(interaction: ChatInputCommandInteraction): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const id = interaction.options.getInteger('id')!;
+    const ids = interaction.options.getString('ids')!.split(' ');
     const entries = await this.database.getEntriesForSender(interaction.user.id);
+    const toDelete = [];
 
-    if (id > entries.length || id < 0) {
-      await interaction.reply(`No entry with id ${id} exists.`);
-      return;
+    for (const idString of ids) {
+      const id = Number(idString);
+
+      if (Number.isNaN(id)) {
+        await interaction.reply(`Invalid ID '${idString}'`);
+        return;
+      }
+
+      if (id > entries.length || id < 0) {
+        await interaction.reply(`No entry with id ${id} exists.`);
+        return;
+      }
+
+      toDelete.push(entries[id - 1]);
     }
 
-    await entries[id - 1].delete();
+    for (const entry of toDelete) {
+      await entry.delete();
+    }
+
     await interaction.reply('Deleted.');
   }
 
