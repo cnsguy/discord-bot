@@ -56,9 +56,7 @@ export class NoteModule extends Module {
     const noteSearchCommand = new SlashCommandBuilder()
       .setName('note-search')
       .setDescription('Search between your notes via regex')
-      .addIntegerOption(
-        new SlashCommandIntegerOption().setName('regex').setDescription('Search regex').setRequired(true)
-      )
+      .addStringOption(new SlashCommandStringOption().setName('regex').setDescription('Search regex').setRequired(true))
       .toJSON();
 
     const noteImportCommand = new SlashCommandBuilder()
