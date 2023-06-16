@@ -142,7 +142,7 @@ export class DateModule extends Module {
 
     const deleteSubcommand = new SlashCommandSubcommandBuilder()
       .setName('delete')
-      .setDescription('Delete the specified reminder by ID')
+      .setDescription('Delete the specified reminders by ID')
       .addStringOption(new SlashCommandStringOption().setName('ids').setDescription('IDs to delete').setRequired(true));
 
     const adminListSubcommand = new SlashCommandSubcommandBuilder()
@@ -154,7 +154,7 @@ export class DateModule extends Module {
 
     const adminDeleteSubcommand = new SlashCommandSubcommandBuilder()
       .setName('delete')
-      .setDescription('Delete the specified reminder by ID for a given user')
+      .setDescription('Delete the specified reminders by ID for a given user')
       .addUserOption(
         new SlashCommandUserOption().setName('user').setDescription('User to delete the reminder for').setRequired(true)
       )

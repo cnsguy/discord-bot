@@ -37,12 +37,12 @@ export class RSSModule extends Module {
 
     const deleteIdSubcommand = new SlashCommandSubcommandBuilder()
       .setName('id')
-      .setDescription('Delete an RSS monitor entry from the database by ID')
+      .setDescription('Delete RSS entries from the database by ID')
       .addStringOption(new SlashCommandStringOption().setName('ids').setDescription('IDs to delete').setRequired(true));
 
     const deleteAllSubcommand = new SlashCommandSubcommandBuilder()
       .setName('all')
-      .setDescription('Delete all RSS monitor entries for the current channel');
+      .setDescription('Delete all RSS entries for the current channel');
 
     const deleteSubcommandGroup = new SlashCommandSubcommandGroupBuilder()
       .setName('delete')
