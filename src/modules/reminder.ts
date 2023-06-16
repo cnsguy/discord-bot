@@ -6,6 +6,8 @@ import {
   SlashCommandBuilder,
   SlashCommandStringOption,
   SlashCommandUserOption,
+  SlashCommandSubcommandBuilder,
+  SlashCommandSubcommandGroupBuilder,
 } from 'discord.js';
 import { ReminderDatabase } from './reminder/database';
 import { splitEvery } from 'ramda';
@@ -100,30 +102,28 @@ export class DateModule extends Module {
   private readonly database: ReminderDatabase;
 
   private constructor(private readonly bot: Bot) {
-    const reminderInCommand = new SlashCommandBuilder()
-      .setName('reminder-in')
+    const inSubcommand = new SlashCommandSubcommandBuilder()
+      .setName('in')
       .setDescription('Show a reminder once on a specific date (relative)')
       .addStringOption(
         new SlashCommandStringOption().setName('date').setDescription('Date to show the message on').setRequired(true)
       )
       .addStringOption(
         new SlashCommandStringOption().setName('message').setDescription('Message to show').setRequired(true)
-      )
-      .toJSON();
+      );
 
-    const reminderOnCommand = new SlashCommandBuilder()
-      .setName('reminder-on')
+    const onSubcommand = new SlashCommandSubcommandBuilder()
+      .setName('on')
       .setDescription('Show a reminder once on a specific date (absolute)')
       .addStringOption(
         new SlashCommandStringOption().setName('date').setDescription('Date to show the message on').setRequired(true)
       )
       .addStringOption(
         new SlashCommandStringOption().setName('message').setDescription('Message to show').setRequired(true)
-      )
-      .toJSON();
+      );
 
-    const reminderRepeatCommand = new SlashCommandBuilder()
-      .setName('reminder-repeat')
+    const repeatSubcommand = new SlashCommandSubcommandBuilder()
+      .setName('repeat')
       .setDescription('Repeat a reminder based on an interval (relative)')
       .addStringOption(
         new SlashCommandStringOption()
@@ -134,45 +134,50 @@ export class DateModule extends Module {
       .addStringOption(
         new SlashCommandStringOption().setName('message').setDescription('Message to show').setRequired(true)
       )
-      .addStringOption(new SlashCommandStringOption().setName('start').setDescription('When to start (default: now)'))
-      .toJSON();
+      .addStringOption(new SlashCommandStringOption().setName('start').setDescription('When to start (default: now)'));
 
-    const reminderListCommand = new SlashCommandBuilder()
-      .setName('reminder-list')
-      .setDescription('List all reminders in the current server for yourself')
-      .toJSON();
+    const listSubcommand = new SlashCommandSubcommandBuilder()
+      .setName('list')
+      .setDescription('List all reminders in the current server for yourself');
 
-    const reminderAdminListCommand = new SlashCommandBuilder()
-      .setName('reminder-admin-list')
+    const deleteSubcommand = new SlashCommandSubcommandBuilder()
+      .setName('delete')
+      .setDescription('Delete the specified reminder by ID')
+      .addStringOption(new SlashCommandStringOption().setName('ids').setDescription('IDs to delete').setRequired(true));
+
+    const adminListSubcommand = new SlashCommandSubcommandBuilder()
+      .setName('list')
       .setDescription('List all reminders in the current server for a given user')
       .addUserOption(
         new SlashCommandUserOption().setName('user').setDescription('User to list reminders for').setRequired(true)
-      )
-      .toJSON();
+      );
 
-    const reminderDelete = new SlashCommandBuilder()
-      .setName('reminder-delete')
-      .setDescription('Delete the specified reminder by ID')
-      .addStringOption(new SlashCommandStringOption().setName('ids').setDescription('IDs to delete').setRequired(true))
-      .toJSON();
-
-    const reminderAdminDeleteCommand = new SlashCommandBuilder()
-      .setName('reminder-admin-delete')
+    const adminDeleteSubcommand = new SlashCommandSubcommandBuilder()
+      .setName('delete')
       .setDescription('Delete the specified reminder by ID for a given user')
       .addUserOption(
         new SlashCommandUserOption().setName('user').setDescription('User to delete the reminder for').setRequired(true)
       )
-      .addStringOption(new SlashCommandStringOption().setName('ids').setDescription('IDs to delete').setRequired(true))
+      .addStringOption(new SlashCommandStringOption().setName('ids').setDescription('IDs to delete').setRequired(true));
+
+    const adminSubcommands = new SlashCommandSubcommandGroupBuilder()
+      .setName('admin')
+      .setDescription('Reminder admin commands')
+      .addSubcommand(adminListSubcommand)
+      .addSubcommand(adminDeleteSubcommand);
+
+    const reminderCommand = new SlashCommandBuilder()
+      .setName('reminder')
+      .setDescription('Reminder commands')
+      .addSubcommand(inSubcommand)
+      .addSubcommand(onSubcommand)
+      .addSubcommand(repeatSubcommand)
+      .addSubcommand(listSubcommand)
+      .addSubcommand(deleteSubcommand)
+      .addSubcommandGroup(adminSubcommands)
       .toJSON();
 
-    bot.registerSlashCommand(reminderInCommand, (interaction) => this.reminderInCommand(interaction));
-    bot.registerSlashCommand(reminderOnCommand, (interaction) => this.reminderOnCommand(interaction));
-    bot.registerSlashCommand(reminderRepeatCommand, (interaction) => this.reminderRepeatCommand(interaction));
-    bot.registerSlashCommand(reminderListCommand, (interaction) => this.reminderListCommand(interaction));
-    bot.registerSlashCommand(reminderDelete, (interaction) => this.reminderDeleteCommand(interaction));
-    bot.registerSlashCommand(reminderAdminListCommand, (interaction) => this.reminderAdminListCommand(interaction));
-    bot.registerSlashCommand(reminderAdminDeleteCommand, (interaction) => this.reminderAdminDeleteCommand(interaction));
-
+    bot.registerSlashCommand(reminderCommand, (interaction) => this.reminderCommand(interaction));
     super();
     this.bot = bot;
     this.database = new ReminderDatabase(this.bot.database);
@@ -218,7 +223,7 @@ export class DateModule extends Module {
     return entries.length >= 10;
   }
 
-  private async reminderInCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async reminderInSubcommand(interaction: ChatInputCommandInteraction): Promise<void> {
     if (await this.checkUserReminderLimit(interaction)) {
       await interaction.reply('You have too many reminders on this server.');
       return;
@@ -253,7 +258,7 @@ export class DateModule extends Module {
     await interaction.reply('Reminder set.');
   }
 
-  private async reminderOnCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async reminderOnSubcommand(interaction: ChatInputCommandInteraction): Promise<void> {
     if (await this.checkUserReminderLimit(interaction)) {
       await interaction.reply('You have too many reminders on this server.');
       return;
@@ -282,7 +287,7 @@ export class DateModule extends Module {
     await interaction.reply('Reminder set.');
   }
 
-  private async reminderRepeatCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async reminderRepeatSubcommand(interaction: ChatInputCommandInteraction): Promise<void> {
     if (await this.checkUserReminderLimit(interaction)) {
       await interaction.reply('You have too many reminders on this server.');
       return;
@@ -352,11 +357,11 @@ export class DateModule extends Module {
     await interaction.reply({ embeds: embeds });
   }
 
-  private async reminderListCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async reminderListSubcommand(interaction: ChatInputCommandInteraction): Promise<void> {
     return this.reminderList(interaction, interaction.user.id);
   }
 
-  private async reminderAdminListCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async reminderAdminListSubcommand(interaction: ChatInputCommandInteraction): Promise<void> {
     if (!(await this.bot.checkInteractionPermissions(interaction, [ManageGuild]))) {
       return;
     }
@@ -395,12 +400,12 @@ export class DateModule extends Module {
     await interaction.reply('Deleted.');
   }
 
-  private async reminderDeleteCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async reminderDeleteSubcommand(interaction: ChatInputCommandInteraction): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     return this.reminderDeleteCommon(interaction, interaction.user.id);
   }
 
-  private async reminderAdminDeleteCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async reminderAdminDeleteSubcommand(interaction: ChatInputCommandInteraction): Promise<void> {
     if (!(await this.bot.checkInteractionPermissions(interaction, [ManageGuild]))) {
       return;
     }
@@ -408,5 +413,39 @@ export class DateModule extends Module {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const user = interaction.options.getUser('user')!;
     return this.reminderDeleteCommon(interaction, user.id);
+  }
+
+  private async reminderCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+    const subcommand = interaction.options.getSubcommand(true);
+    const subcommandGroup = interaction.options.getSubcommandGroup();
+
+    switch (subcommandGroup) {
+      case null: {
+        switch (subcommand) {
+          case 'in':
+            return this.reminderInSubcommand(interaction);
+          case 'on':
+            return this.reminderOnSubcommand(interaction);
+          case 'repeat':
+            return this.reminderRepeatSubcommand(interaction);
+          case 'list':
+            return this.reminderListSubcommand(interaction);
+          case 'delete':
+            return this.reminderDeleteSubcommand(interaction);
+          default:
+            throw new Error(`Invalid subcommand: ${subcommand}`);
+        }
+      }
+      case 'admin': {
+        switch (subcommand) {
+          case 'list':
+            return this.reminderAdminListSubcommand(interaction);
+          case 'delete':
+            return this.reminderAdminDeleteSubcommand(interaction);
+          default:
+            throw new Error(`Invalid subcommand: ${subcommand}`);
+        }
+      }
+    }
   }
 }
