@@ -1,7 +1,11 @@
 import { Module } from '../module';
 import { Bot } from '../bot';
-import { ChatInputCommandInteraction, EmbedBuilder, SlashCommandBuilder } from 'discord.js';
-import assert from 'assert';
+import {
+  ChatInputCommandInteraction,
+  EmbedBuilder,
+  SlashCommandBuilder,
+  SlashCommandSubcommandBuilder,
+} from 'discord.js';
 
 interface ResultEntry {
   readonly id: number;
@@ -71,19 +75,46 @@ export class GelbooruModule extends Module {
       new CommandInfo('rating:general sort:random illyasviel_von_einzbern', 'Random Illya picture from Gelbooru')
     );
 
-    for (const [name, info] of this.premadeCommands.entries()) {
-      const command = new SlashCommandBuilder().setName(name).setDescription(info.description).toJSON();
-      bot.registerSlashCommand(command, (interaction) => this.premadeCommand(interaction));
-    }
+    const explosionSubcommand = new SlashCommandSubcommandBuilder()
+      .setName('explosion')
+      .setDescription('Random Megumin picture');
+
+    const uselessSubcommand = new SlashCommandSubcommandBuilder()
+      .setName('useless')
+      .setDescription('Random Aqua picture');
+
+    const illyaSubcommand = new SlashCommandSubcommandBuilder().setName('illya').setDescription('Random Illya picture');
+    const kamaSubcommand = new SlashCommandSubcommandBuilder().setName('kama').setDescription('Random Kama picture');
+
+    const gelbooruCommand = new SlashCommandBuilder()
+      .setName('gelbooru')
+      .setDescription('Gelbooru commands')
+      .addSubcommand(explosionSubcommand)
+      .addSubcommand(uselessSubcommand)
+      .addSubcommand(illyaSubcommand)
+      .addSubcommand(kamaSubcommand)
+      .toJSON();
+
+    bot.registerSlashCommand(gelbooruCommand, (interaction) => this.gelbooruCommand(interaction));
   }
 
   public static load(bot: Bot): GelbooruModule {
     return new GelbooruModule(bot);
   }
 
-  private async premadeCommand(interaction: ChatInputCommandInteraction): Promise<void> {
-    const info = this.premadeCommands.get(interaction.commandName);
-    assert(info !== undefined);
-    await handleImageCommon(interaction, info.tags);
+  private async gelbooruCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+    const subcommand = interaction.options.getSubcommand(true);
+    switch (subcommand) {
+      case 'explosion':
+        return handleImageCommon(interaction, 'rating:general sort:random megumin');
+      case 'useless':
+        return handleImageCommon(interaction, 'rating:general sort:random aqua_(konosuba)');
+      case 'illya':
+        return handleImageCommon(interaction, 'rating:general sort:random illyasviel_von_einzbern');
+      case 'kama':
+        return handleImageCommon(interaction, 'rating:general sort:random kama_(fate)');
+      default:
+        throw new Error(`Invalid subcommand: ${subcommand}`);
+    }
   }
 }
