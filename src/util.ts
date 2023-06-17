@@ -80,3 +80,13 @@ export function readEnvOrThrow(key: string): string {
 
   return value;
 }
+
+export function wrapRegexInCode(content: string): string {
+  return '```' + content.replace('`', '\\`') + '```';
+}
+
+export async function fetchJson<T>(url: string): Promise<T> {
+  const resp = await fetch(url);
+  const result = (await resp.json()) as T;
+  return result;
+}

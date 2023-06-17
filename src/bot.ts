@@ -22,6 +22,7 @@ import { NoteModule } from './modules/note';
 import { TauriModule } from './modules/tauri';
 import { DuckDuckGoModule } from './modules/duckduckgo';
 import { GelbooruModule } from './modules/gelbooru';
+import { FourLeafModule } from './modules/fourleaf';
 import sqlite3 from 'sqlite3';
 import assert from 'assert';
 
@@ -119,6 +120,7 @@ export class Bot extends EventEmitter {
       ['note']: NoteModule,
       ['tauri']: TauriModule,
       ['duckduckgo']: DuckDuckGoModule,
+      ['fourleaf']: FourLeafModule,
     };
 
     const module = moduleNameMap[moduleName];

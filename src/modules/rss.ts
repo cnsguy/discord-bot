@@ -13,10 +13,7 @@ import {
 } from 'discord.js';
 import { RSSDatabase } from './rss/database';
 import { ManageGuild } from '../permission';
-
-function wrapRegexInCode(content: string): string {
-  return '```' + content.replace('`', '\\`') + '```';
-}
+import { wrapRegexInCode } from '../util';
 
 export class RSSModule extends Module {
   private readonly database: RSSDatabase;
