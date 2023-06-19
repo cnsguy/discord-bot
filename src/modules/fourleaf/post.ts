@@ -40,7 +40,8 @@ export class FourLeafPost {
     public readonly numReplies: number,
     public readonly time: number,
     public readonly fileUrl: string | undefined,
-    public readonly isOp: boolean
+    public readonly isOp: boolean,
+    public readonly board: string
   ) {
     this.url = url;
     this.no = no;
@@ -54,6 +55,7 @@ export class FourLeafPost {
     this.time = time;
     this.fileUrl = fileUrl;
     this.isOp = isOp;
+    this.board = board;
   }
 }
 
@@ -71,7 +73,8 @@ class MentionTrackedPost {
     public readonly filename: string | undefined,
     public readonly threadSubject: string | undefined,
     public readonly fileUrl: string | undefined,
-    public readonly isOp: boolean
+    public readonly isOp: boolean,
+    public readonly board: string
   ) {
     this.url = url;
     this.no = no;
@@ -84,6 +87,7 @@ class MentionTrackedPost {
     this.threadSubject = threadSubject;
     this.fileUrl = fileUrl;
     this.isOp = isOp;
+    this.board = board;
     this.mentions = 0;
   }
 
@@ -140,7 +144,8 @@ export async function getNewPosts(board: string): Promise<FourLeafPost[]> {
             filename,
             threadSubject,
             rawPost.ext !== undefined ? `https://i.4cdn.org/${board}/${rawPost.tim}${rawPost.ext}` : undefined,
-            rawPost.no === rawCatalogThread.no
+            rawPost.no === rawCatalogThread.no,
+            board
           )
         );
       }
@@ -161,7 +166,8 @@ export async function getNewPosts(board: string): Promise<FourLeafPost[]> {
         elem.mentions,
         elem.time,
         elem.fileUrl,
-        elem.isOp
+        elem.isOp,
+        elem.board
       )
     );
   }

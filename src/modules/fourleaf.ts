@@ -1,6 +1,5 @@
 import { Module } from '../module';
 import { Bot } from '../bot';
-import { limitTextLength } from '../util';
 import {
   ChatInputCommandInteraction,
   EmbedBuilder,
@@ -18,6 +17,10 @@ import { wrapRegexInCode } from '../util';
 import { FourLeafPost, getNewPosts } from './fourleaf/post';
 
 function shouldSendPost(entry: FourLeafMonitorEntry, post: FourLeafPost): boolean {
+  if (entry.board != post.board) {
+    return false;
+  }
+
   if (entry.messageRegex !== null) {
     if (post.message === undefined || !post.message.match(new RegExp(entry.messageRegex, 'i'))) {
       return false;
@@ -172,22 +175,15 @@ export class FourLeafModule extends Module {
   }
 
   private async sendFourLeafPost(channel: TextBasedChannel, post: FourLeafPost): Promise<void> {
-    const embed = new EmbedBuilder().setTitle(`${post.no}`).setURL(post.url);
+    await channel.send(`> ============ <${post.url}> ============`);
 
     if (post.fileUrl !== undefined) {
-      if (post.fileUrl.endsWith('png') || post.fileUrl.endsWith('jpg') || post.fileUrl.endsWith('gif')) {
-        embed.setImage(post.fileUrl);
-      } else {
-        embed.addFields({ name: 'Media', value: post.fileUrl });
-      }
+      await channel.send(post.fileUrl);
     }
 
     if (post.message !== undefined) {
-      const description = limitTextLength(post.message, 2000, '...');
-      embed.setDescription(description);
+      await channel.send(post.message);
     }
-
-    await channel.send({ embeds: [embed] });
   }
 
   private async fourleafAddSubcommand(interaction: ChatInputCommandInteraction): Promise<void> {
