@@ -18,6 +18,7 @@ interface RawFourLeafEntry {
   readonly threadSubjectRegex: string | null;
   readonly minReplies: number | null;
   readonly isOp: number | null;
+  readonly shouldMentionEveryone: number | null;
 }
 
 interface FourLeafRawSentEntry {
@@ -38,6 +39,7 @@ export class FourLeafMonitorEntry {
     public readonly threadSubjectRegex: string | null,
     public readonly minReplies: number | null,
     public readonly isOp: boolean | null,
+    public readonly shouldMentionEveryone: boolean | null,
     private readonly database: Database
   ) {
     this.id = id;
@@ -50,6 +52,7 @@ export class FourLeafMonitorEntry {
     this.threadSubjectRegex = threadSubjectRegex;
     this.minReplies = minReplies;
     this.isOp = isOp;
+    this.shouldMentionEveryone = shouldMentionEveryone;
     this.database = database;
   }
 
@@ -84,6 +87,7 @@ function processRawEntry(database: Database, entry: RawFourLeafEntry): FourLeafM
     entry.threadSubjectRegex,
     entry.minReplies,
     entry.isOp !== null ? entry.isOp === 1 : null,
+    entry.shouldMentionEveryone !== null ? entry.shouldMentionEveryone === 1 : null,
     database
   );
 }
@@ -106,10 +110,11 @@ export class FourLeafDatabase {
     filenameRegex: string | null,
     threadSubjectRegex: string | null,
     minReplies: number | null,
-    isOp: boolean | null
+    isOp: boolean | null,
+    shouldMentionEveryone: boolean | null
   ): Promise<void> {
     await this.database.run(
-      'INSERT INTO fourleaf_monitor (channelId, board, messageRegex, nameRegex, tripcodeRegex, filenameRegex, threadSubjectRegex, minReplies, isOp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO fourleaf_monitor (channelId, board, messageRegex, nameRegex, tripcodeRegex, filenameRegex, threadSubjectRegex, minReplies, isOp, shouldMentionEveryone) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       channelId,
       board,
       messageRegex,
@@ -118,7 +123,8 @@ export class FourLeafDatabase {
       filenameRegex,
       threadSubjectRegex,
       minReplies,
-      isOp
+      isOp,
+      shouldMentionEveryone
     );
   }
 
@@ -131,10 +137,11 @@ export class FourLeafDatabase {
     filenameRegex: string | null,
     threadSubjectRegex: string | null,
     minReplies: number | null,
-    isOp: boolean | null
+    isOp: boolean | null,
+    shouldMentionEveryone: boolean | null
   ): Promise<FourLeafMonitorEntry | undefined> {
     const raw: RawFourLeafEntry | undefined = await this.database.get(
-      'SELECT * FROM fourleaf_monitor WHERE channelId = ? AND board = ? AND messageRegex IS ? AND nameRegex IS ? AND tripcodeRegex IS ? AND filenameRegex IS ? AND threadSubjectRegex IS ? AND minReplies IS ? AND isOp IS ? LIMIT 1',
+      'SELECT * FROM fourleaf_monitor WHERE channelId = ? AND board = ? AND messageRegex IS ? AND nameRegex IS ? AND tripcodeRegex IS ? AND filenameRegex IS ? AND threadSubjectRegex IS ? AND minReplies IS ? AND isOp IS ? AND shouldMentionEveryone IS ? LIMIT 1',
       channelId,
       board,
       messageRegex,
@@ -143,7 +150,8 @@ export class FourLeafDatabase {
       filenameRegex,
       threadSubjectRegex,
       minReplies,
-      isOp
+      isOp,
+      shouldMentionEveryone
     );
 
     return raw !== undefined ? processRawEntry(this.database, raw) : undefined;

@@ -87,6 +87,9 @@ export class FourLeafModule extends Module {
       )
       .addIntegerOption(
         new SlashCommandIntegerOption().setName('min-replies').setDescription('Minimum number of replies')
+      )
+      .addBooleanOption(
+        new SlashCommandBooleanOption().setName('should-mention-everyone').setDescription('Should mention everyone')
       );
 
     const listSubcommand = new SlashCommandSubcommandBuilder()
@@ -165,7 +168,7 @@ export class FourLeafModule extends Module {
 
           try {
             await this.database.newSentEntry(entry.channelId, post.no);
-            await this.sendFourLeafPost(channel, post);
+            await this.sendFourLeafPost(channel, post, entry);
           } catch (error) {
             console.error(`Exception while sending a fourleaf entry: ${String(error)}`);
           }
@@ -178,8 +181,18 @@ export class FourLeafModule extends Module {
     this.running = false;
   }
 
-  private async sendFourLeafPost(channel: TextBasedChannel, post: FourLeafPost): Promise<void> {
-    await channel.send(`> ============ <${post.url}> ============`);
+  private async sendFourLeafPost(
+    channel: TextBasedChannel,
+    post: FourLeafPost,
+    entry: FourLeafMonitorEntry
+  ): Promise<void> {
+    let header = `> ============ <${post.url}> ============`;
+
+    if (entry.shouldMentionEveryone) {
+      header += ' @everyone';
+    }
+
+    await channel.send(header);
 
     if (post.fileUrl !== undefined) {
       await channel.send(post.fileUrl);
@@ -209,6 +222,7 @@ export class FourLeafModule extends Module {
     const threadSubjectRegex = interaction.options.getString('thread-subject-regex');
     const minReplies = interaction.options.getInteger('min-replies');
     const isOp = interaction.options.getBoolean('is-op');
+    const shouldMentionEveryone = interaction.options.getBoolean('should-mention-everyone');
 
     const entry = await this.database.getEntry(
       interaction.channelId,
@@ -219,7 +233,8 @@ export class FourLeafModule extends Module {
       filenameRegex,
       threadSubjectRegex,
       minReplies,
-      isOp
+      isOp,
+      shouldMentionEveryone
     );
 
     if (entry !== undefined) {
@@ -243,7 +258,8 @@ export class FourLeafModule extends Module {
       filenameRegex,
       threadSubjectRegex,
       minReplies,
-      isOp
+      isOp,
+      shouldMentionEveryone
     );
 
     await interaction.reply('Added.');
@@ -293,6 +309,10 @@ export class FourLeafModule extends Module {
 
       if (entry.isOp !== null) {
         builder.addFields({ name: 'Is OP', value: String(entry.isOp) });
+      }
+
+      if (entry.shouldMentionEveryone !== null) {
+        builder.addFields({ name: 'Should mention everyone', value: String(entry.shouldMentionEveryone) });
       }
 
       return builder;

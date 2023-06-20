@@ -8,7 +8,8 @@ CREATE TABLE fourleaf_monitor (
   filenameRegex TEXT,
   threadSubjectRegex TEXT,
   minReplies INTEGER,
-  isOp BOOLEAN
+  isOp BOOLEAN,
+  shouldMentionEveryone BOOLEAN,
 );
 
 CREATE TABLE fourleaf_sent (
