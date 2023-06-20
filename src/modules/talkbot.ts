@@ -36,6 +36,6 @@ export class TalkbotModule extends Module {
       return;
     }
 
-    await message.reply(entry.quote);
+    await message.channel.send(entry.quote);
   }
 }
