@@ -163,8 +163,12 @@ export class FourLeafModule extends Module {
             continue;
           }
 
-          await this.database.newSentEntry(entry.channelId, post.no);
-          await this.sendFourLeafPost(channel, post);
+          try {
+            await this.database.newSentEntry(entry.channelId, post.no);
+            await this.sendFourLeafPost(channel, post);
+          } catch (error) {
+            console.error(`Exception while sending a fourleaf entry: ${String(error)}`);
+          }
         }
       }
     } catch (error) {
