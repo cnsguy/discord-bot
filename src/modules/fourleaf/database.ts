@@ -12,10 +12,15 @@ interface RawFourLeafEntry {
   readonly channelId: string;
   readonly board: string;
   readonly messageRegex: string | null;
+  readonly messageRegexIgnoreCase: number | null;
   readonly nameRegex: string | null;
+  readonly nameRegexIgnoreCase: number | null;
   readonly tripcodeRegex: string | null;
+  readonly tripcodeRegexIgnoreCase: number | null;
   readonly filenameRegex: string | null;
+  readonly filenameRegexIgnoreCase: number | null;
   readonly threadSubjectRegex: string | null;
+  readonly threadSubjectRegexIgnoreCase: number | null;
   readonly minReplies: number | null;
   readonly isOp: number | null;
   readonly shouldMentionEveryone: number | null;
@@ -33,10 +38,15 @@ export class FourLeafMonitorEntry {
     public readonly channelId: string,
     public readonly board: string,
     public readonly messageRegex: string | null,
+    public readonly messageRegexIgnoreCase: boolean | null,
     public readonly nameRegex: string | null,
+    public readonly nameRegexIgnoreCase: boolean | null,
     public readonly tripcodeRegex: string | null,
+    public readonly tripcodeRegexIgnoreCase: boolean | null,
     public readonly filenameRegex: string | null,
+    public readonly filenameRegexIgnoreCase: boolean | null,
     public readonly threadSubjectRegex: string | null,
+    public readonly threadSubjectRegexIgnoreCase: boolean | null,
     public readonly minReplies: number | null,
     public readonly isOp: boolean | null,
     public readonly shouldMentionEveryone: boolean | null,
@@ -46,10 +56,15 @@ export class FourLeafMonitorEntry {
     this.channelId = channelId;
     this.board = board;
     this.messageRegex = messageRegex;
+    this.messageRegexIgnoreCase = messageRegexIgnoreCase;
     this.nameRegex = nameRegex;
+    this.nameRegexIgnoreCase = nameRegexIgnoreCase;
     this.tripcodeRegex = tripcodeRegex;
+    this.tripcodeRegexIgnoreCase = tripcodeRegexIgnoreCase;
     this.filenameRegex = filenameRegex;
+    this.filenameRegexIgnoreCase = filenameRegexIgnoreCase;
     this.threadSubjectRegex = threadSubjectRegex;
+    this.threadSubjectRegexIgnoreCase = threadSubjectRegexIgnoreCase;
     this.minReplies = minReplies;
     this.isOp = isOp;
     this.shouldMentionEveryone = shouldMentionEveryone;
@@ -81,10 +96,15 @@ function processRawEntry(database: Database, entry: RawFourLeafEntry): FourLeafM
     entry.channelId,
     entry.board,
     entry.messageRegex,
+    entry.messageRegexIgnoreCase === 1,
     entry.nameRegex,
+    entry.nameRegexIgnoreCase === 1,
     entry.tripcodeRegex,
+    entry.tripcodeRegexIgnoreCase === 1,
     entry.filenameRegex,
+    entry.filenameRegexIgnoreCase === 1,
     entry.threadSubjectRegex,
+    entry.threadSubjectRegexIgnoreCase === 1,
     entry.minReplies,
     entry.isOp !== null ? entry.isOp === 1 : null,
     entry.shouldMentionEveryone !== null ? entry.shouldMentionEveryone === 1 : null,
@@ -105,23 +125,49 @@ export class FourLeafDatabase {
     channelId: string,
     board: string,
     messageRegex: string | null,
+    messageRegexIgnoreCase: boolean | null,
     nameRegex: string | null,
+    nameRegexIgnoreCase: boolean | null,
     tripcodeRegex: string | null,
+    tripcodeRegexIgnoreCase: boolean | null,
     filenameRegex: string | null,
+    filenameRegexIgnoreCase: boolean | null,
     threadSubjectRegex: string | null,
+    threadSubjectRegexIgnoreCase: boolean | null,
     minReplies: number | null,
     isOp: boolean | null,
     shouldMentionEveryone: boolean | null
   ): Promise<void> {
     await this.database.run(
-      'INSERT INTO fourleaf_monitor (channelId, board, messageRegex, nameRegex, tripcodeRegex, filenameRegex, threadSubjectRegex, minReplies, isOp, shouldMentionEveryone) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO fourleaf_monitor (' +
+        'channelId, ' +
+        'board, ' +
+        'messageRegex, ' +
+        'messageRegexIgnoreCase, ' +
+        'nameRegex, ' +
+        'nameRegexIgnoreCase, ' +
+        'tripcodeRegex, ' +
+        'tripcodeRegexIgnoreCase, ' +
+        'filenameRegex, ' +
+        'filenameRegexIgnoreCase, ' +
+        'threadSubjectRegex, ' +
+        'threadSubjectRegexIgnoreCase, ' +
+        'minReplies, ' +
+        'isOp, ' +
+        'shouldMentionEveryone ' +
+        ') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       channelId,
       board,
       messageRegex,
+      messageRegexIgnoreCase,
       nameRegex,
+      nameRegexIgnoreCase,
       tripcodeRegex,
+      tripcodeRegexIgnoreCase,
       filenameRegex,
+      filenameRegexIgnoreCase,
       threadSubjectRegex,
+      threadSubjectRegexIgnoreCase,
       minReplies,
       isOp,
       shouldMentionEveryone
@@ -132,23 +178,49 @@ export class FourLeafDatabase {
     channelId: string,
     board: string,
     messageRegex: string | null,
+    messageRegexIgnoreCase: boolean | null,
     nameRegex: string | null,
+    nameRegexIgnoreCase: boolean | null,
     tripcodeRegex: string | null,
+    tripcodeRegexIgnoreCase: boolean | null,
     filenameRegex: string | null,
+    filenameRegexIgnoreCase: boolean | null,
     threadSubjectRegex: string | null,
+    threadSubjectRegexIgnoreCase: boolean | null,
     minReplies: number | null,
     isOp: boolean | null,
     shouldMentionEveryone: boolean | null
   ): Promise<FourLeafMonitorEntry | undefined> {
     const raw: RawFourLeafEntry | undefined = await this.database.get(
-      'SELECT * FROM fourleaf_monitor WHERE channelId = ? AND board = ? AND messageRegex IS ? AND nameRegex IS ? AND tripcodeRegex IS ? AND filenameRegex IS ? AND threadSubjectRegex IS ? AND minReplies IS ? AND isOp IS ? AND shouldMentionEveryone IS ? LIMIT 1',
+      'SELECT * FROM fourleaf_monitor WHERE ' +
+        'channelId = ? ' +
+        'AND board = ? ' +
+        'AND messageRegex IS ? ' +
+        'AND messageRegexIgnoreCase = ? ' +
+        'AND nameRegex IS ? ' +
+        'AND nameRegexIgnoreCase = ? ' +
+        'AND tripcodeRegex IS ? ' +
+        'AND tripcodeRegexIgnoreCase = ? ' +
+        'AND filenameRegex IS ? ' +
+        'AND filenameRegexIgnoreCase = ? ' +
+        'AND threadSubjectRegex IS ? ' +
+        'AND threadSubjectRegexIgnoreCase = ? ' +
+        'AND minReplies IS ? ' +
+        'AND isOp IS ? ' +
+        'AND shouldMentionEveryone IS ? ' +
+        'LIMIT 1',
       channelId,
       board,
       messageRegex,
+      messageRegexIgnoreCase,
       nameRegex,
+      nameRegexIgnoreCase,
       tripcodeRegex,
+      tripcodeRegexIgnoreCase,
       filenameRegex,
+      filenameRegexIgnoreCase,
       threadSubjectRegex,
+      threadSubjectRegexIgnoreCase,
       minReplies,
       isOp,
       shouldMentionEveryone

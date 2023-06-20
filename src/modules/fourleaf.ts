@@ -22,31 +22,41 @@ function shouldSendPost(entry: FourLeafMonitorEntry, post: FourLeafPost): boolea
   }
 
   if (entry.messageRegex !== null) {
-    if (post.message === undefined || !post.message.match(new RegExp(entry.messageRegex, 'i'))) {
+    const flag = entry.messageRegexIgnoreCase === true ? 'i' : undefined;
+
+    if (post.message === undefined || !post.message.match(new RegExp(entry.messageRegex, flag))) {
       return false;
     }
   }
 
   if (entry.nameRegex !== null) {
-    if (post.name === undefined || !post.name.match(new RegExp(entry.nameRegex, 'i'))) {
+    const flag = entry.nameRegexIgnoreCase === true ? 'i' : undefined;
+
+    if (post.name === undefined || !post.name.match(new RegExp(entry.nameRegex, flag))) {
       return false;
     }
   }
 
   if (entry.tripcodeRegex !== null) {
-    if (post.trip === undefined || !post.trip.match(new RegExp(entry.tripcodeRegex, 'i'))) {
+    const flag = entry.tripcodeRegexIgnoreCase === true ? 'i' : undefined;
+
+    if (post.trip === undefined || !post.trip.match(new RegExp(entry.tripcodeRegex, flag))) {
       return false;
     }
   }
 
   if (entry.filenameRegex !== null) {
-    if (post.filename === undefined || !post.filename.match(new RegExp(entry.filenameRegex, 'i'))) {
+    const flag = entry.filenameRegexIgnoreCase === true ? 'i' : undefined;
+
+    if (post.filename === undefined || !post.filename.match(new RegExp(entry.filenameRegex, flag))) {
       return false;
     }
   }
 
   if (entry.threadSubjectRegex !== null) {
-    if (post.threadSubject === undefined || !post.threadSubject.match(new RegExp(entry.threadSubjectRegex, 'i'))) {
+    const flag = entry.threadSubjectRegexIgnoreCase === true ? 'i' : undefined;
+
+    if (post.threadSubject === undefined || !post.threadSubject.match(new RegExp(entry.threadSubjectRegex, flag))) {
       return false;
     }
   }
@@ -78,13 +88,36 @@ export class FourLeafModule extends Module {
       .setDescription('Add a fourleaf monitor entry')
       .addStringOption(new SlashCommandStringOption().setName('board').setDescription('Board').setRequired(true))
       .addStringOption(new SlashCommandStringOption().setName('message-regex').setDescription('Message content regex'))
+      .addBooleanOption(
+        new SlashCommandBooleanOption()
+          .setName('message-regex-ignore-case')
+          .setDescription('Ignore case for message content regex')
+      )
       .addStringOption(new SlashCommandStringOption().setName('name-regex').setDescription('Name regex'))
+      .addBooleanOption(
+        new SlashCommandBooleanOption().setName('name-regex-ignore-case').setDescription('Ignore case for name regex')
+      )
       .addStringOption(new SlashCommandStringOption().setName('tripcode-regex').setDescription('Tripcode regex'))
+      .addBooleanOption(
+        new SlashCommandBooleanOption()
+          .setName('tripcode-regex-ignore-case')
+          .setDescription('Ignore case for tripcode regex')
+      )
       .addStringOption(new SlashCommandStringOption().setName('filename-regex').setDescription('Filename regex'))
-      .addBooleanOption(new SlashCommandBooleanOption().setName('is-op').setDescription('OP only'))
+      .addBooleanOption(
+        new SlashCommandBooleanOption()
+          .setName('filename-regex-ignore-case')
+          .setDescription('Ignore case for filename regex')
+      )
       .addStringOption(
         new SlashCommandStringOption().setName('thread-subject-regex').setDescription('Thread subject regex')
       )
+      .addBooleanOption(
+        new SlashCommandBooleanOption()
+          .setName('thread-subject-regex-ignore-case')
+          .setDescription('Ignore case for thread subject regex')
+      )
+      .addBooleanOption(new SlashCommandBooleanOption().setName('is-op').setDescription('OP only'))
       .addIntegerOption(
         new SlashCommandIntegerOption().setName('min-replies').setDescription('Minimum number of replies')
       )
@@ -216,10 +249,15 @@ export class FourLeafModule extends Module {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const board = interaction.options.getString('board')!;
     const messageRegex = interaction.options.getString('message-regex');
+    const messageRegexIgnoreCase = interaction.options.getBoolean('message-regex-ignore-case') ?? true;
     const nameRegex = interaction.options.getString('name-regex');
+    const nameRegexIgnoreCase = interaction.options.getBoolean('name-regex-ignore-case') ?? true;
     const tripcodeRegex = interaction.options.getString('tripcode-regex');
+    const tripcodeRegexIgnoreCase = interaction.options.getBoolean('tripcode-regex-ignore-case') ?? true;
     const filenameRegex = interaction.options.getString('filename-regex');
+    const filenameRegexIgnoreCase = interaction.options.getBoolean('filename-regex-ignore-case') ?? true;
     const threadSubjectRegex = interaction.options.getString('thread-subject-regex');
+    const threadSubjectRegexIgnoreCase = interaction.options.getBoolean('thread-subject-regex-ignore-case') ?? true;
     const minReplies = interaction.options.getInteger('min-replies');
     const isOp = interaction.options.getBoolean('is-op');
     const shouldMentionEveryone = interaction.options.getBoolean('should-mention-everyone');
@@ -228,10 +266,15 @@ export class FourLeafModule extends Module {
       interaction.channelId,
       board,
       messageRegex,
+      messageRegexIgnoreCase,
       nameRegex,
+      nameRegexIgnoreCase,
       tripcodeRegex,
+      tripcodeRegexIgnoreCase,
       filenameRegex,
+      filenameRegexIgnoreCase,
       threadSubjectRegex,
+      threadSubjectRegexIgnoreCase,
       minReplies,
       isOp,
       shouldMentionEveryone
@@ -253,10 +296,15 @@ export class FourLeafModule extends Module {
       interaction.channelId,
       board,
       messageRegex,
+      messageRegexIgnoreCase,
       nameRegex,
+      nameRegexIgnoreCase,
       tripcodeRegex,
+      tripcodeRegexIgnoreCase,
       filenameRegex,
+      filenameRegexIgnoreCase,
       threadSubjectRegex,
+      threadSubjectRegexIgnoreCase,
       minReplies,
       isOp,
       shouldMentionEveryone
@@ -287,20 +335,40 @@ export class FourLeafModule extends Module {
         builder.addFields({ name: 'Message regex', value: wrapRegexInCode(entry.messageRegex) });
       }
 
+      if (entry.messageRegexIgnoreCase !== true) {
+        builder.addFields({ name: 'Message regex is case sensitive', value: 'true' });
+      }
+
       if (entry.nameRegex !== null) {
         builder.addFields({ name: 'Name regex', value: wrapRegexInCode(entry.nameRegex) });
+      }
+
+      if (entry.nameRegexIgnoreCase !== true) {
+        builder.addFields({ name: 'Name regex is case sensitive', value: 'true' });
       }
 
       if (entry.tripcodeRegex !== null) {
         builder.addFields({ name: 'Tripcode regex', value: wrapRegexInCode(entry.tripcodeRegex) });
       }
 
+      if (entry.tripcodeRegexIgnoreCase !== true) {
+        builder.addFields({ name: 'Tripcode regex is case sensitive', value: 'true' });
+      }
+
       if (entry.filenameRegex !== null) {
         builder.addFields({ name: 'Filename regex', value: wrapRegexInCode(entry.filenameRegex) });
       }
 
+      if (entry.filenameRegexIgnoreCase !== true) {
+        builder.addFields({ name: 'Filename regex is case sensitive', value: 'true' });
+      }
+
       if (entry.threadSubjectRegex !== null) {
         builder.addFields({ name: 'Thread subject regex', value: wrapRegexInCode(entry.threadSubjectRegex) });
+      }
+
+      if (entry.threadSubjectRegexIgnoreCase !== true) {
+        builder.addFields({ name: 'Thread subject regex is case sensitive', value: 'true' });
       }
 
       if (entry.minReplies !== null) {
