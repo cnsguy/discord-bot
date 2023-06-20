@@ -115,12 +115,16 @@ export class RSSModule extends Module {
             continue;
           }
 
-          await this.database.newSentEntry(entry.channelId, item.link);
-          await this.sendRSSItem(channel, item);
+          try {
+            await this.database.newSentEntry(entry.channelId, item.link);
+            await this.sendRSSItem(channel, item);
+          } catch (error) {
+            console.error(`Exception while sending RSS item: ${String(error)}`);
+          }
         }
       }
     } catch (error) {
-      console.error(`Exception while fetching RSS entries: ${String(error)}`);
+      console.error(`Exception while processing RSS entries: ${String(error)}`);
     }
   }
 
