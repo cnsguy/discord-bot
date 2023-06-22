@@ -1,5 +1,5 @@
 import { Module } from '../module';
-import { Bot } from '../bot';
+import { Bot, BotEventNames } from '../bot';
 import {
   ChatInputCommandInteraction,
   EmbedBuilder,
@@ -14,7 +14,7 @@ import {
 import { FourLeafDatabase, FourLeafMonitorEntry } from './fourleaf/database';
 import { ManageGuild } from '../permission';
 import { wrapRegexInCode } from '../util';
-import { FourLeafPost, getNewPosts } from './fourleaf/post';
+import { FourLeafPost, FourLeafThreadPost, getNewFrontPagePosts, getNewThreadPosts } from './fourleaf/post';
 
 function shouldSendPost(entry: FourLeafMonitorEntry, post: FourLeafPost): boolean {
   if (entry.board != post.board) {
@@ -62,12 +62,20 @@ function shouldSendPost(entry: FourLeafMonitorEntry, post: FourLeafPost): boolea
   }
 
   if (entry.minReplies !== null) {
+    if (!(post instanceof FourLeafThreadPost)) {
+      return false;
+    }
+
     if (post.numReplies < entry.minReplies) {
       return false;
     }
   }
 
   if (entry.isOp !== null) {
+    if (!(post instanceof FourLeafThreadPost)) {
+      return false;
+    }
+
     if (entry.isOp !== post.isOp) {
       return false;
     }
@@ -78,7 +86,10 @@ function shouldSendPost(entry: FourLeafMonitorEntry, post: FourLeafPost): boolea
 
 export class FourLeafModule extends Module {
   private readonly database: FourLeafDatabase;
-  private running: boolean;
+  private catalogProducerLoopRunning = false;
+  private frontPageProducerLoopRunning = false;
+  private messageLoopRunning = false;
+  private readonly postQueue: FourLeafPost[];
 
   private constructor(private readonly bot: Bot) {
     super();
@@ -155,63 +166,115 @@ export class FourLeafModule extends Module {
     bot.registerSlashCommand(fourleafCommand, (interaction) => this.fourleafCommand(interaction));
     this.bot = bot;
     this.database = new FourLeafDatabase(this.bot.database);
-    this.running = false;
-    setInterval(() => void this.timerTick(), 60000);
+    this.postQueue = [];
+    bot.on(BotEventNames.ClientReady, () => void this.catalogProduceloop());
+    bot.on(BotEventNames.ClientReady, () => void this.frontPageProducerLoop());
+    bot.on(BotEventNames.ClientReady, () => void this.messageLoop());
   }
 
   public static load(bot: Bot): FourLeafModule {
     return new FourLeafModule(bot);
   }
 
-  private async timerTick(): Promise<void> {
-    if (this.running) {
+  private async catalogProduceloop(): Promise<void> {
+    if (this.catalogProducerLoopRunning) {
       return;
     }
 
-    this.running = true;
+    this.catalogProducerLoopRunning = true;
 
-    try {
-      const entries = await this.database.getEntries();
-      const posts = [];
-      const boards = new Set(entries.map((entry) => entry.board));
+    for (;;) {
+      try {
+        const entries = await this.database.getEntries();
+        const boards = new Set(entries.map((entry) => entry.board));
 
-      for (const board of boards) {
-        for (const post of await getNewPosts(board)) {
-          posts.push(post);
+        for (const board of boards) {
+          for (const post of await getNewThreadPosts(board)) {
+            this.postQueue.push(post);
+          }
         }
+      } catch (error) {
+        console.error(`Exception while fetching fourleaf entries: ${String(error)}`);
       }
 
-      for (const entry of entries) {
-        const channel = await this.bot.client.channels.fetch(entry.channelId);
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+    }
+  }
 
-        if (channel === null || !channel.isTextBased()) {
-          return;
-        }
-
-        for (const post of posts) {
-          if (!shouldSendPost(entry, post)) {
-            continue;
-          }
-
-          const sentEntry = await this.database.getSentEntry(entry.channelId, post.no);
-
-          if (sentEntry !== undefined) {
-            continue;
-          }
-
-          try {
-            await this.database.newSentEntry(entry.channelId, post.no);
-            await this.sendFourLeafPost(channel, post, entry);
-          } catch (error) {
-            console.error(`Exception while sending a fourleaf entry: ${String(error)}`);
-          }
-        }
-      }
-    } catch (error) {
-      console.error(`Exception while fetching fourleaf entries: ${String(error)}`);
+  private async frontPageProducerLoop(): Promise<void> {
+    if (this.frontPageProducerLoopRunning) {
+      return;
     }
 
-    this.running = false;
+    this.frontPageProducerLoopRunning = true;
+
+    for (;;) {
+      try {
+        const entries = await this.database.getEntries();
+        const boards = new Set(entries.map((entry) => entry.board));
+
+        for (const board of boards) {
+          for (const post of await getNewFrontPagePosts(board)) {
+            this.postQueue.push(post);
+          }
+        }
+      } catch (error) {
+        console.error(`Exception while fetching fourleaf entries: ${String(error)}`);
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
+
+  private async messageLoop(): Promise<void> {
+    if (this.messageLoopRunning) {
+      return;
+    }
+
+    this.messageLoopRunning = true;
+
+    for (;;) {
+      const entries = await this.database.getEntries();
+
+      for (;;) {
+        const post = this.postQueue.shift();
+
+        if (post === undefined) {
+          break;
+        }
+
+        for (const entry of entries) {
+          await this.processFourLeafPost(post, entry);
+        }
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
+
+  private async processFourLeafPost(post: FourLeafPost, entry: FourLeafMonitorEntry): Promise<void> {
+    const channel = await this.bot.client.channels.fetch(entry.channelId);
+
+    if (channel === null || !channel.isTextBased()) {
+      return;
+    }
+
+    if (!shouldSendPost(entry, post)) {
+      return;
+    }
+
+    const sentEntry = await this.database.getSentEntry(entry.channelId, post.no);
+
+    if (sentEntry !== undefined) {
+      return;
+    }
+
+    try {
+      await this.database.newSentEntry(entry.channelId, post.no);
+      await this.sendFourLeafPost(channel, post, entry);
+    } catch (error) {
+      console.error(`Exception while sending a fourleaf entry: ${String(error)}`);
+    }
   }
 
   private async sendFourLeafPost(

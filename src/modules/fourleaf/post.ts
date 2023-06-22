@@ -11,7 +11,7 @@ interface RawFourLeafCatalogPage {
 
 type RawFourLeafCatalog = RawFourLeafCatalogPage[];
 
-interface RawFourLeafPost {
+interface RawFourLeafCatalogThreadPost {
   readonly no: number;
   readonly name: string;
   readonly sub?: string;
@@ -23,8 +23,28 @@ interface RawFourLeafPost {
   readonly trip?: string;
 }
 
-interface RawFourLeafThread {
-  readonly posts: RawFourLeafPost[];
+interface RawFourLeafCatalogThread {
+  readonly posts: RawFourLeafCatalogThreadPost[];
+}
+
+interface RawFourLeafPageThreadPost {
+  readonly no: number;
+  readonly name: string;
+  readonly sub?: string;
+  readonly com?: string;
+  readonly filename?: string;
+  readonly ext?: string;
+  readonly tim: number;
+  readonly time: number;
+  readonly trip?: string;
+}
+
+interface RawFourLeafPageThread {
+  readonly posts: RawFourLeafPageThreadPost[];
+}
+
+interface RawFourLeafPage {
+  readonly threads: RawFourLeafPageThread[];
 }
 
 export class FourLeafPost {
@@ -37,10 +57,8 @@ export class FourLeafPost {
     public readonly filename: string | undefined,
     public readonly trip: string | undefined,
     public readonly threadSubject: string | undefined,
-    public readonly numReplies: number,
     public readonly time: number,
     public readonly fileUrl: string | undefined,
-    public readonly isOp: boolean,
     public readonly board: string
   ) {
     this.url = url;
@@ -51,59 +69,49 @@ export class FourLeafPost {
     this.filename = filename;
     this.trip = trip;
     this.threadSubject = threadSubject;
-    this.numReplies = numReplies;
     this.time = time;
     this.fileUrl = fileUrl;
-    this.isOp = isOp;
     this.board = board;
   }
 }
 
-class MentionTrackedPost {
-  public mentions: number;
+export class FourLeafThreadPost extends FourLeafPost {
+  public numReplies: number;
 
   public constructor(
-    public readonly url: string,
-    public readonly no: number,
-    public readonly name: string,
-    public readonly sub: string | undefined,
-    public readonly trip: string | undefined,
-    public readonly time: number,
-    public readonly message: string | undefined,
-    public readonly filename: string | undefined,
-    public readonly threadSubject: string | undefined,
-    public readonly fileUrl: string | undefined,
-    public readonly isOp: boolean,
-    public readonly board: string
+    url: string,
+    no: number,
+    name: string,
+    subject: string | undefined,
+    message: string | undefined,
+    filename: string | undefined,
+    trip: string | undefined,
+    threadSubject: string | undefined,
+    time: number,
+    fileUrl: string | undefined,
+    board: string,
+    public readonly isOp: boolean | undefined
   ) {
-    this.url = url;
-    this.no = no;
-    this.name = name;
-    this.sub = sub;
-    this.trip = trip;
-    this.time = time;
-    this.message = message;
-    this.filename = filename;
-    this.threadSubject = threadSubject;
-    this.fileUrl = fileUrl;
+    super(url, no, name, subject, message, filename, trip, threadSubject, time, fileUrl, board);
+    this.numReplies = 1;
     this.isOp = isOp;
-    this.board = board;
-    this.mentions = 0;
   }
 
   public addMention(): void {
-    this.mentions += 1;
+    this.numReplies += 1;
   }
 }
 
-export async function getNewPosts(board: string): Promise<FourLeafPost[]> {
+export class FourLeafPagePost extends FourLeafPost {}
+
+export async function getNewThreadPosts(board: string): Promise<FourLeafThreadPost[]> {
   const catalog = await fetchJson<RawFourLeafCatalog>(`https://a.4cdn.org/${board}/catalog.json`);
   const results = [];
-  const mentionTracker = new Map<number, MentionTrackedPost>();
+  const mentionTracker = new Map<number, FourLeafThreadPost>();
 
   for (const rawPage of catalog) {
     for (const rawCatalogThread of rawPage.threads) {
-      const rawThread = await fetchJson<RawFourLeafThread>(
+      const rawThread = await fetchJson<RawFourLeafCatalogThread>(
         `https://a.4cdn.org/${board}/thread/${rawCatalogThread.no}.json`
       );
 
@@ -131,45 +139,65 @@ export async function getNewPosts(board: string): Promise<FourLeafPost[]> {
           }
         }
 
-        mentionTracker.set(
+        const post = new FourLeafThreadPost(
+          `https://boards.4chan.org/${board}/thread/${rawCatalogThread.no}#p${rawPost.no}`,
           rawPost.no,
-          new MentionTrackedPost(
-            `https://boards.4chan.org/${board}/thread/${rawCatalogThread.no}#p${rawPost.no}`,
-            rawPost.no,
-            rawPost.name,
-            rawPost.sub,
-            rawPost.trip,
-            rawPost.time,
-            message,
-            filename,
-            threadSubject,
-            rawPost.ext !== undefined ? `https://i.4cdn.org/${board}/${rawPost.tim}${rawPost.ext}` : undefined,
-            rawPost.no === rawCatalogThread.no,
-            board
-          )
+          rawPost.name,
+          rawPost.sub,
+          message,
+          filename,
+          rawPost.trip,
+          threadSubject,
+          rawPost.time,
+          rawPost.ext !== undefined ? `https://i.4cdn.org/${board}/${rawPost.tim}${rawPost.ext}` : undefined,
+          board,
+          rawPost.no === rawCatalogThread.no
         );
+
+        mentionTracker.set(rawPost.no, post);
+        results.push(post);
       }
     }
   }
 
-  for (const elem of mentionTracker.values()) {
-    results.push(
-      new FourLeafPost(
-        elem.url,
-        elem.no,
-        elem.name,
-        elem.sub,
-        elem.message,
-        elem.filename,
-        elem.trip,
-        elem.threadSubject,
-        elem.mentions,
-        elem.time,
-        elem.fileUrl,
-        elem.isOp,
-        elem.board
-      )
-    );
+  return results;
+}
+
+export async function getNewFrontPagePosts(board: string): Promise<FourLeafPagePost[]> {
+  const catalog = await fetchJson<RawFourLeafPage>(`https://a.4cdn.org/${board}/1.json`);
+  const results = [];
+
+  for (const rawThread of catalog.threads) {
+    for (const rawPost of rawThread.posts) {
+      const threadSubject = rawThread.posts[0]?.sub;
+
+      const filename =
+        rawPost.filename !== undefined && rawPost.ext !== undefined ? rawPost.filename + rawPost.ext : undefined;
+
+      let message = undefined;
+
+      if (rawPost.com !== undefined) {
+        message = convert(rawPost.com, {
+          wordwrap: 2000, // XXX tmp
+        });
+      }
+
+      const post = new FourLeafPagePost(
+        `https://boards.4chan.org/${board}/thread/${rawThread.posts[0].no}#p${rawPost.no}`,
+        rawPost.no,
+        rawPost.name,
+        rawPost.sub,
+        message,
+        filename,
+        rawPost.trip,
+        threadSubject,
+        rawPost.time,
+        rawPost.ext !== undefined ? `https://i.4cdn.org/${board}/${rawPost.tim}${rawPost.ext}` : undefined,
+        board
+      );
+
+      results.push(post);
+    }
   }
 
   return results;
