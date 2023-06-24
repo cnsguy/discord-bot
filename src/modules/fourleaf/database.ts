@@ -23,7 +23,7 @@ interface RawFourLeafEntry {
   readonly threadSubjectRegexIgnoreCase: number | null;
   readonly minReplies: number | null;
   readonly isOp: number | null;
-  readonly shouldMentionEveryone: number | null;
+  readonly extraText: string | null;
 }
 
 interface FourLeafRawSentEntry {
@@ -49,7 +49,7 @@ export class FourLeafMonitorEntry {
     public readonly threadSubjectRegexIgnoreCase: boolean | null,
     public readonly minReplies: number | null,
     public readonly isOp: boolean | null,
-    public readonly shouldMentionEveryone: boolean | null,
+    public readonly extraText: string | null,
     private readonly database: Database
   ) {
     this.id = id;
@@ -67,7 +67,7 @@ export class FourLeafMonitorEntry {
     this.threadSubjectRegexIgnoreCase = threadSubjectRegexIgnoreCase;
     this.minReplies = minReplies;
     this.isOp = isOp;
-    this.shouldMentionEveryone = shouldMentionEveryone;
+    this.extraText = extraText;
     this.database = database;
   }
 
@@ -107,7 +107,7 @@ function processRawEntry(database: Database, entry: RawFourLeafEntry): FourLeafM
     entry.threadSubjectRegexIgnoreCase === 1,
     entry.minReplies,
     entry.isOp !== null ? entry.isOp === 1 : null,
-    entry.shouldMentionEveryone !== null ? entry.shouldMentionEveryone === 1 : null,
+    entry.extraText,
     database
   );
 }
@@ -136,7 +136,7 @@ export class FourLeafDatabase {
     threadSubjectRegexIgnoreCase: boolean | null,
     minReplies: number | null,
     isOp: boolean | null,
-    shouldMentionEveryone: boolean | null
+    extraText: string | null
   ): Promise<void> {
     await this.database.run(
       'INSERT INTO fourleaf_monitor (' +
@@ -154,7 +154,7 @@ export class FourLeafDatabase {
         'threadSubjectRegexIgnoreCase, ' +
         'minReplies, ' +
         'isOp, ' +
-        'shouldMentionEveryone ' +
+        'extraText ' +
         ') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       channelId,
       board,
@@ -170,7 +170,7 @@ export class FourLeafDatabase {
       threadSubjectRegexIgnoreCase,
       minReplies,
       isOp,
-      shouldMentionEveryone
+      extraText
     );
   }
 
@@ -189,7 +189,7 @@ export class FourLeafDatabase {
     threadSubjectRegexIgnoreCase: boolean | null,
     minReplies: number | null,
     isOp: boolean | null,
-    shouldMentionEveryone: boolean | null
+    extraText: string | null
   ): Promise<FourLeafMonitorEntry | undefined> {
     const raw: RawFourLeafEntry | undefined = await this.database.get(
       'SELECT * FROM fourleaf_monitor WHERE ' +
@@ -207,7 +207,7 @@ export class FourLeafDatabase {
         'AND threadSubjectRegexIgnoreCase = ? ' +
         'AND minReplies IS ? ' +
         'AND isOp IS ? ' +
-        'AND shouldMentionEveryone IS ? ' +
+        'AND extraText IS ? ' +
         'LIMIT 1',
       channelId,
       board,
@@ -223,7 +223,7 @@ export class FourLeafDatabase {
       threadSubjectRegexIgnoreCase,
       minReplies,
       isOp,
-      shouldMentionEveryone
+      extraText
     );
 
     return raw !== undefined ? processRawEntry(this.database, raw) : undefined;

@@ -14,7 +14,7 @@ CREATE TABLE fourleaf_monitor (
   threadSubjectRegexIgnoreCase BOOLEAN NOT NULL,
   minReplies INTEGER,
   isOp BOOLEAN,
-  shouldMentionEveryone BOOLEAN,
+  extraText TEXT,
 );
 
 CREATE TABLE fourleaf_sent (

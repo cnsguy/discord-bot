@@ -132,9 +132,7 @@ export class FourLeafModule extends Module {
       .addIntegerOption(
         new SlashCommandIntegerOption().setName('min-replies').setDescription('Minimum number of replies')
       )
-      .addBooleanOption(
-        new SlashCommandBooleanOption().setName('should-mention-everyone').setDescription('Should mention everyone')
-      );
+      .addStringOption(new SlashCommandStringOption().setName('extra-text').setDescription('Extra text'));
 
     const listSubcommand = new SlashCommandSubcommandBuilder()
       .setName('list')
@@ -284,8 +282,8 @@ export class FourLeafModule extends Module {
   ): Promise<void> {
     let header = `> ============ <${post.url}> ============`;
 
-    if (entry.shouldMentionEveryone) {
-      header += ' @everyone';
+    if (entry.extraText) {
+      header += ' ' + entry.extraText;
     }
 
     await channel.send(header);
@@ -323,7 +321,7 @@ export class FourLeafModule extends Module {
     const threadSubjectRegexIgnoreCase = interaction.options.getBoolean('thread-subject-regex-ignore-case') ?? true;
     const minReplies = interaction.options.getInteger('min-replies');
     const isOp = interaction.options.getBoolean('is-op');
-    const shouldMentionEveryone = interaction.options.getBoolean('should-mention-everyone');
+    const extraText = interaction.options.getString('extra-text');
 
     const entry = await this.database.getEntry(
       interaction.channelId,
@@ -340,7 +338,7 @@ export class FourLeafModule extends Module {
       threadSubjectRegexIgnoreCase,
       minReplies,
       isOp,
-      shouldMentionEveryone
+      extraText
     );
 
     if (entry !== undefined) {
@@ -370,7 +368,7 @@ export class FourLeafModule extends Module {
       threadSubjectRegexIgnoreCase,
       minReplies,
       isOp,
-      shouldMentionEveryone
+      extraText
     );
 
     await interaction.reply('Added.');
@@ -442,8 +440,8 @@ export class FourLeafModule extends Module {
         builder.addFields({ name: 'Is OP', value: String(entry.isOp) });
       }
 
-      if (entry.shouldMentionEveryone !== null) {
-        builder.addFields({ name: 'Should mention everyone', value: String(entry.shouldMentionEveryone) });
+      if (entry.extraText !== null) {
+        builder.addFields({ name: 'Extra text', value: entry.extraText });
       }
 
       return builder;
