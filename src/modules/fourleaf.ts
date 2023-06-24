@@ -293,7 +293,13 @@ export class FourLeafModule extends Module {
     }
 
     if (post.message !== undefined) {
-      await channel.send(post.message);
+      let message = post.message;
+
+      while (message.length > 0) {
+        const part = message.slice(0, 2000);
+        await channel.send(part);
+        message = message.slice(2000);
+      }
     }
   }
 
