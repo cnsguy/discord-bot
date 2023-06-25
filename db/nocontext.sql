@@ -1,7 +1,6 @@
 CREATE TABLE nocontext (
   id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   guildId TEXT NOT NULL,
-  senderId TEXT NOT NULL,
   quote TEXT NOT NULL,
   UNIQUE(guildId, quote)
 );

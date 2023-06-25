@@ -10,7 +10,6 @@ export class NoContextDatabaseError extends Error {
 interface RawNoContextEntry {
   readonly id: number;
   readonly guildId: string;
-  readonly senderId: string;
   readonly quote: string;
 }
 
@@ -18,13 +17,11 @@ export class NoContextEntry {
   public constructor(
     public readonly id: number,
     public readonly guildId: string,
-    public readonly senderId: string,
     public readonly quote: string,
     private readonly database: Database
   ) {
     this.id = id;
     this.guildId = guildId;
-    this.senderId = senderId;
     this.quote = quote;
     this.database = database;
   }
@@ -35,7 +32,7 @@ export class NoContextEntry {
 }
 
 function processRawNoContextEntry(database: Database, entry: RawNoContextEntry): NoContextEntry {
-  return new NoContextEntry(entry.id, entry.guildId, entry.senderId, entry.quote, database);
+  return new NoContextEntry(entry.id, entry.guildId, entry.quote, database);
 }
 
 export class NoContextDatabase {
@@ -43,13 +40,8 @@ export class NoContextDatabase {
     this.database = database;
   }
 
-  public async newEntry(guildId: string, senderId: string, quote: string): Promise<void> {
-    await this.database.run(
-      'INSERT OR IGNORE INTO nocontext (guildId, senderId, quote) VALUES (?, ?, ?)',
-      guildId,
-      senderId,
-      quote
-    );
+  public async newEntry(guildId: string, quote: string): Promise<void> {
+    await this.database.run('INSERT OR IGNORE INTO nocontext (guildId, quote) VALUES (?, ?)', guildId, quote);
   }
 
   public async getRandomEntry(guildId: string): Promise<NoContextEntry | undefined> {
