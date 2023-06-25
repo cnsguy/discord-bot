@@ -183,17 +183,17 @@ export class FourLeafModule extends Module {
     this.catalogProducerLoopRunning = true;
 
     for (;;) {
-      try {
-        const entries = await this.database.getEntries();
-        const boards = new Set(entries.map((entry) => entry.board));
+      const entries = await this.database.getEntries();
+      const boards = new Set(entries.map((entry) => entry.board));
 
-        for (const board of boards) {
+      for (const board of boards) {
+        try {
           for (const post of await getNewThreadPosts(board)) {
             this.postQueue.push(post);
           }
+        } catch (error) {
+          console.error(`Exception while fetching fourleaf entries: ${String(error)}`);
         }
-      } catch (error) {
-        console.error(`Exception while fetching fourleaf entries: ${String(error)}`);
       }
 
       await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -208,19 +208,18 @@ export class FourLeafModule extends Module {
     this.frontPageProducerLoopRunning = true;
 
     for (;;) {
-      try {
-        const entries = await this.database.getEntries();
-        const boards = new Set(entries.map((entry) => entry.board));
+      const entries = await this.database.getEntries();
+      const boards = new Set(entries.map((entry) => entry.board));
 
-        for (const board of boards) {
+      for (const board of boards) {
+        try {
           for (const post of await getNewFrontPagePosts(board)) {
             this.postQueue.push(post);
           }
+        } catch (error) {
+          console.error(`Exception while fetching fourleaf entries: ${String(error)}`);
         }
-      } catch (error) {
-        console.error(`Exception while fetching fourleaf entries: ${String(error)}`);
       }
-
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
