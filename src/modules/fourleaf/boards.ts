@@ -8,7 +8,7 @@ interface RawFourLeafBoardList {
   readonly boards: RawFourLeafBoardListEntry[];
 }
 
-export async function getBoards(): Promise<string[]> {
+export async function getFourLeafBoards(): Promise<string[]> {
   const raw = await fetchJson<RawFourLeafBoardList>('https://a.4cdn.org/boards.json');
   return raw.boards.map((entry) => entry.board);
 }

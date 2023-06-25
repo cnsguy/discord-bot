@@ -15,7 +15,7 @@ import { FourLeafDatabase, FourLeafMonitorEntry } from './fourleaf/database';
 import { ManageGuild } from '../permission';
 import { wrapRegexInCode } from '../util';
 import { FourLeafPost, FourLeafThreadPost, getNewFrontPagePosts, getNewThreadPosts } from './fourleaf/post';
-import { getBoards as getFourLeafBoards } from './fourleaf/boards';
+import { getFourLeafBoards } from './fourleaf/boards';
 
 function shouldSendPost(entry: FourLeafMonitorEntry, post: FourLeafPost): boolean {
   if (entry.board != post.board) {
