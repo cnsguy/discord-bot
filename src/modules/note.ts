@@ -170,13 +170,11 @@ export class NoteModule extends Module {
     let num = 0;
 
     for (const note of content.split('\n')) {
-      const match = note.match(/^\[\d+\]\[\d+ \d+\] (.*)\s*$/);
-
-      if (match === null || match[1] === undefined) {
+      if (note.length === 0) {
         continue;
       }
 
-      await this.database.newEntry(match[1], interaction.user.id);
+      await this.database.newEntry(note, interaction.user.id);
       num += 1;
     }
 
