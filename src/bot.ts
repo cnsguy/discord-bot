@@ -25,6 +25,7 @@ import { GelbooruModule } from './modules/gelbooru';
 import { FourLeafModule } from './modules/fourleaf';
 import sqlite3 from 'sqlite3';
 import assert from 'assert';
+import { NoContextModule } from './modules/nocontext';
 
 export type SlashCommandCallback = (interaction: ChatInputCommandInteraction) => Promise<void>;
 
@@ -121,6 +122,7 @@ export class Bot extends EventEmitter {
       ['tauri']: TauriModule,
       ['duckduckgo']: DuckDuckGoModule,
       ['fourleaf']: FourLeafModule,
+      ['nocontext']: NoContextModule,
     };
 
     const module = moduleNameMap[moduleName];
