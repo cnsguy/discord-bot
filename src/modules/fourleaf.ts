@@ -15,6 +15,7 @@ import { FourLeafDatabase, FourLeafMonitorEntry } from './fourleaf/database';
 import { ManageGuild } from '../permission';
 import { wrapRegexInCode } from '../util';
 import { FourLeafPost, FourLeafThreadPost, getNewFrontPagePosts, getNewThreadPosts } from './fourleaf/post';
+import { getBoards as getFourLeafBoards } from './fourleaf/boards';
 
 function shouldSendPost(entry: FourLeafMonitorEntry, post: FourLeafPost): boolean {
   if (entry.board != post.board) {
@@ -328,6 +329,13 @@ export class FourLeafModule extends Module {
     const minReplies = interaction.options.getInteger('min-replies');
     const isOp = interaction.options.getBoolean('is-op');
     const extraText = interaction.options.getString('extra-text');
+
+    const boards = await getFourLeafBoards();
+
+    if (!boards.includes(board)) {
+      await interaction.reply(`Invalid board '${board}'.`);
+      return;
+    }
 
     const entry = await this.database.getEntry(
       interaction.channelId,
