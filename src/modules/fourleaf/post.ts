@@ -1,4 +1,4 @@
-import { fetchJson } from '../../util';
+import { slowFetchJson } from '../../util';
 import { convert } from 'html-to-text';
 
 interface RawFourLeafCatalogThread {
@@ -105,14 +105,15 @@ export class FourLeafThreadPost extends FourLeafPost {
 export class FourLeafPagePost extends FourLeafPost {}
 
 export async function getNewThreadPosts(board: string): Promise<FourLeafThreadPost[]> {
-  const catalog = await fetchJson<RawFourLeafCatalog>(`https://a.4cdn.org/${board}/catalog.json`);
+  const catalog = await slowFetchJson<RawFourLeafCatalog>(`https://a.4cdn.org/${board}/catalog.json`, 1000);
   const results = [];
   const mentionTracker = new Map<number, FourLeafThreadPost>();
 
   for (const rawPage of catalog) {
     for (const rawCatalogThread of rawPage.threads) {
-      const rawThread = await fetchJson<RawFourLeafCatalogThread>(
-        `https://a.4cdn.org/${board}/thread/${rawCatalogThread.no}.json`
+      const rawThread = await slowFetchJson<RawFourLeafCatalogThread>(
+        `https://a.4cdn.org/${board}/thread/${rawCatalogThread.no}.json`,
+        1000
       );
 
       const threadSubject = rawThread.posts[0]?.sub;
@@ -164,7 +165,7 @@ export async function getNewThreadPosts(board: string): Promise<FourLeafThreadPo
 }
 
 export async function getNewFrontPagePosts(board: string): Promise<FourLeafPagePost[]> {
-  const catalog = await fetchJson<RawFourLeafPage>(`https://a.4cdn.org/${board}/1.json`);
+  const catalog = await slowFetchJson<RawFourLeafPage>(`https://a.4cdn.org/${board}/1.json`, 1000);
   const results = [];
 
   for (const rawThread of catalog.threads) {

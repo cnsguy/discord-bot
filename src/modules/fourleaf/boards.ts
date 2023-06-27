@@ -1,4 +1,4 @@
-import { fetchJson } from '../../util';
+import { slowFetchJson } from '../../util';
 
 interface RawFourLeafBoardListEntry {
   readonly board: string;
@@ -9,6 +9,6 @@ interface RawFourLeafBoardList {
 }
 
 export async function getFourLeafBoards(): Promise<string[]> {
-  const raw = await fetchJson<RawFourLeafBoardList>('https://a.4cdn.org/boards.json');
+  const raw = await slowFetchJson<RawFourLeafBoardList>('https://a.4cdn.org/boards.json', 1000);
   return raw.boards.map((entry) => entry.board);
 }

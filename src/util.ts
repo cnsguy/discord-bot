@@ -90,3 +90,16 @@ export async function fetchJson<T>(url: string): Promise<T> {
   const result = (await resp.json()) as T;
   return result;
 }
+
+export async function slowFetchJson<T>(url: string, time: number): Promise<T> {
+  const now = Date.now();
+  const result = await fetchJson<T>(url);
+  const elapsed = Date.now() - now;
+  const remaining = time - elapsed;
+
+  if (remaining > 0) {
+    await new Promise((resolve) => setTimeout(resolve, remaining));
+  }
+
+  return result;
+}
