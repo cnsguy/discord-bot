@@ -113,7 +113,7 @@ export class DateModule extends Module {
       );
 
     const onSubcommand = new SlashCommandSubcommandBuilder()
-      .setName('on')
+      .setName('at')
       .setDescription('Show a reminder once on a specific date (absolute)')
       .addStringOption(
         new SlashCommandStringOption().setName('date').setDescription('Date to show the message on').setRequired(true)
@@ -258,7 +258,7 @@ export class DateModule extends Module {
     await interaction.reply('Reminder set.');
   }
 
-  private async reminderOnSubcommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async reminderAtSubcommand(interaction: ChatInputCommandInteraction): Promise<void> {
     if (await this.checkUserReminderLimit(interaction)) {
       await interaction.reply('You have too many reminders on this server.');
       return;
@@ -424,8 +424,8 @@ export class DateModule extends Module {
         switch (subcommand) {
           case 'in':
             return this.reminderInSubcommand(interaction);
-          case 'on':
-            return this.reminderOnSubcommand(interaction);
+          case 'at':
+            return this.reminderAtSubcommand(interaction);
           case 'repeat':
             return this.reminderRepeatSubcommand(interaction);
           case 'list':
