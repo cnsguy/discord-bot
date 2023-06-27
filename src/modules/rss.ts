@@ -1,5 +1,5 @@
 import { Module } from '../module';
-import { Bot } from '../bot';
+import { Bot, BotEventNames } from '../bot';
 import { limitTextLength, escapeLinksForDiscord } from '../util';
 import { RSSItemError, RSSItem } from './rss/item';
 import {
@@ -61,70 +61,74 @@ export class RSSModule extends Module {
 
     this.bot = bot;
     this.database = new RSSDatabase(this.bot.database);
-    setInterval(() => void this.timerTick(), 30000);
+    bot.on(BotEventNames.ClientReady, () => void this.timerLoop());
   }
 
   public static load(bot: Bot): RSSModule {
     return new RSSModule(bot);
   }
 
-  private async timerTick(): Promise<void> {
-    try {
-      const entries = await this.database.getEntries();
+  private async timerLoop(): Promise<void> {
+    for (;;) {
+      try {
+        const entries = await this.database.getEntries();
 
-      for (const entry of entries) {
-        const channel = await this.bot.client.channels.fetch(entry.channelId);
+        for (const entry of entries) {
+          const channel = await this.bot.client.channels.fetch(entry.channelId);
 
-        if (channel === null || !channel.isTextBased()) {
-          return;
-        }
-
-        let result: RSSItem[];
-
-        try {
-          result = await RSSItem.fromLink(entry.link);
-        } catch (error) {
-          if (!(error instanceof RSSItemError)) {
-            throw error;
+          if (channel === null || !channel.isTextBased()) {
+            return;
           }
 
-          console.error(`Failed to get RSS feed from ${entry.link}: ${String(error)}`);
-          return;
-        }
-
-        for (const item of result) {
-          if (
-            item.title !== null &&
-            entry.titleRegex !== null &&
-            !item.title.match(new RegExp(entry.titleRegex, 'i'))
-          ) {
-            continue;
-          }
-
-          if (
-            item.content !== null &&
-            entry.contentRegex !== null &&
-            !item.content.match(new RegExp(entry.contentRegex, 'i'))
-          ) {
-            continue;
-          }
-
-          const sentEntry = await this.database.getSentEntry(entry.channelId, item.link);
-
-          if (sentEntry !== undefined) {
-            continue;
-          }
+          let result: RSSItem[];
 
           try {
-            await this.database.newSentEntry(entry.channelId, item.link);
-            await this.sendRSSItem(channel, item);
+            result = await RSSItem.fromLink(entry.link);
           } catch (error) {
-            console.error(`Exception while sending RSS item: ${String(error)}`);
+            if (!(error instanceof RSSItemError)) {
+              throw error;
+            }
+
+            console.error(`Failed to get RSS feed from ${entry.link}: ${String(error)}`);
+            return;
+          }
+
+          for (const item of result) {
+            if (
+              item.title !== null &&
+              entry.titleRegex !== null &&
+              !item.title.match(new RegExp(entry.titleRegex, 'i'))
+            ) {
+              continue;
+            }
+
+            if (
+              item.content !== null &&
+              entry.contentRegex !== null &&
+              !item.content.match(new RegExp(entry.contentRegex, 'i'))
+            ) {
+              continue;
+            }
+
+            const sentEntry = await this.database.getSentEntry(entry.channelId, item.link);
+
+            if (sentEntry !== undefined) {
+              continue;
+            }
+
+            try {
+              await this.database.newSentEntry(entry.channelId, item.link);
+              await this.sendRSSItem(channel, item);
+            } catch (error) {
+              console.error(`Exception while sending RSS item: ${String(error)}`);
+            }
           }
         }
+      } catch (error) {
+        console.error(`Exception while processing RSS entries: ${String(error)}`);
       }
-    } catch (error) {
-      console.error(`Exception while processing RSS entries: ${String(error)}`);
+
+      await new Promise((resolve) => setTimeout(resolve, 300000));
     }
   }
 
