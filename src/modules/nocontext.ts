@@ -29,7 +29,7 @@ export class NoContextModule extends Module {
 
     const importSubcommand = new SlashCommandSubcommandBuilder()
       .setName('import')
-      .setDescription('Import no context quotes from a life')
+      .setDescription('Import no context quotes from a file')
       .addAttachmentOption(
         new SlashCommandAttachmentOption()
           .setName('quotes')
