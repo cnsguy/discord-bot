@@ -16,13 +16,6 @@ interface Results {
   readonly post?: ResultEntry[];
 }
 
-class CommandInfo {
-  public constructor(public readonly tags: string, public readonly description: string) {
-    this.tags = tags;
-    this.description = description;
-  }
-}
-
 async function handleImageCommon(interaction: ChatInputCommandInteraction, tags: string): Promise<void> {
   await interaction.deferReply();
 
@@ -56,24 +49,8 @@ async function handleImageCommon(interaction: ChatInputCommandInteraction, tags:
 }
 
 export class GelbooruModule extends Module {
-  private readonly premadeCommands: Map<string, CommandInfo>;
-
   private constructor(bot: Bot) {
     super();
-
-    this.premadeCommands = new Map();
-    this.premadeCommands.set(
-      'explosion',
-      new CommandInfo('rating:general sort:random megumin', 'Random Megumin picture from Gelbooru')
-    );
-    this.premadeCommands.set(
-      'useless',
-      new CommandInfo('rating:general sort:random aqua_(konosuba)', 'Random Aqua picture from Gelbooru')
-    );
-    this.premadeCommands.set(
-      'illya',
-      new CommandInfo('rating:general sort:random illyasviel_von_einzbern', 'Random Illya picture from Gelbooru')
-    );
 
     const explosionSubcommand = new SlashCommandSubcommandBuilder()
       .setName('explosion')
@@ -85,6 +62,7 @@ export class GelbooruModule extends Module {
 
     const illyaSubcommand = new SlashCommandSubcommandBuilder().setName('illya').setDescription('Random Illya picture');
     const kamaSubcommand = new SlashCommandSubcommandBuilder().setName('kama').setDescription('Random Kama picture');
+    const qokSubcommand = new SlashCommandSubcommandBuilder().setName('qok').setDescription('Random Qok picture');
 
     const gelbooruCommand = new SlashCommandBuilder()
       .setName('gelbooru')
@@ -93,6 +71,7 @@ export class GelbooruModule extends Module {
       .addSubcommand(uselessSubcommand)
       .addSubcommand(illyaSubcommand)
       .addSubcommand(kamaSubcommand)
+      .addSubcommand(qokSubcommand)
       .toJSON();
 
     bot.registerSlashCommand(gelbooruCommand, (interaction) => this.gelbooruCommand(interaction));
@@ -113,6 +92,11 @@ export class GelbooruModule extends Module {
         return handleImageCommon(interaction, 'rating:general sort:random illyasviel_von_einzbern');
       case 'kama':
         return handleImageCommon(interaction, 'rating:general sort:random kama_(fate)');
+      case 'qok':
+        return handleImageCommon(
+          interaction,
+          '-rating:explicit -rating:questionable -loli -shota 1girl sort:random armpits'
+        );
       default:
         throw new Error(`Invalid subcommand: ${subcommand}`);
     }
