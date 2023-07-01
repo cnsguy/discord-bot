@@ -8,6 +8,7 @@ import {
   SlashCommandUserOption,
   SlashCommandSubcommandBuilder,
   SlashCommandSubcommandGroupBuilder,
+  Channel,
 } from 'discord.js';
 import { ReminderDatabase } from './reminder/database';
 import { splitEvery } from 'ramda';
@@ -195,7 +196,15 @@ export class DateModule extends Module {
 
       for (const entry of entries) {
         if (now >= entry.nextDate.getTime()) {
-          const channel = await this.bot.client.channels.fetch(entry.channelId);
+          let channel: Channel | null = null;
+
+          try {
+            channel = await this.bot.client.channels.fetch(entry.channelId);
+          } catch (error) {
+            console.error(`Channel ${entry.channelId} lost, removing entry`);
+            await entry.delete();
+            continue;
+          }
 
           if (channel !== null && channel.isTextBased()) {
             await channel.send(`<@${entry.senderId}> ${entry.messageContent}`);
