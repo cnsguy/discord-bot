@@ -16,6 +16,7 @@ import { ManageGuild } from '../permission';
 import { wrapRegexInCode } from '../util';
 import { FourLeafPost, FourLeafThreadPost, getNewFrontPagePosts, getNewThreadPosts } from './fourleaf/post';
 import { getFourLeafBoards } from './fourleaf/boards';
+import { SimpleChannel } from 'channel-ts';
 
 function shouldSendPost(entry: FourLeafMonitorEntry, post: FourLeafPost): boolean {
   if (entry.board != post.board) {
@@ -90,7 +91,7 @@ export class FourLeafModule extends Module {
   private catalogProducerLoopRunning = false;
   private frontPageProducerLoopRunning = false;
   private messageLoopRunning = false;
-  private readonly postQueue: FourLeafPost[];
+  private readonly postFeed: SimpleChannel<FourLeafPost>;
 
   private constructor(private readonly bot: Bot) {
     super();
@@ -167,7 +168,7 @@ export class FourLeafModule extends Module {
     bot.registerSlashCommand(fourleafCommand, (interaction) => this.fourleafCommand(interaction));
     this.bot = bot;
     this.database = new FourLeafDatabase(this.bot.database);
-    this.postQueue = [];
+    this.postFeed = new SimpleChannel();
     bot.on(BotEventNames.ClientReady, () => void this.catalogProduceloop());
     bot.on(BotEventNames.ClientReady, () => void this.frontPageProducerLoop());
     bot.on(BotEventNames.ClientReady, () => void this.messageLoop());
@@ -191,7 +192,7 @@ export class FourLeafModule extends Module {
       for (const board of boards) {
         try {
           for await (const post of getNewThreadPosts(board)) {
-            this.postQueue.push(post);
+            this.postFeed.send(post);
           }
         } catch (error) {
           console.error(`Exception while fetching fourleaf entries: ${String(error)}`);
@@ -214,12 +215,14 @@ export class FourLeafModule extends Module {
       for (const board of boards) {
         try {
           for (const post of await getNewFrontPagePosts(board)) {
-            this.postQueue.push(post);
+            this.postFeed.send(post);
           }
         } catch (error) {
           console.error(`Exception while fetching fourleaf entries: ${String(error)}`);
         }
       }
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
 
@@ -233,13 +236,7 @@ export class FourLeafModule extends Module {
     for (;;) {
       const entries = await this.database.getEntries();
 
-      for (;;) {
-        const post = this.postQueue.shift();
-
-        if (post === undefined) {
-          break;
-        }
-
+      for await (const post of this.postFeed) {
         for (const entry of entries) {
           await this.processFourLeafPost(post, entry);
         }
