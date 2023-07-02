@@ -1,5 +1,6 @@
 import { fetchJson } from '../../util';
 import { convert } from 'html-to-text';
+import { SimpleChannel } from 'channel-ts';
 
 interface RawFourLeafCatalogThread {
   readonly no: number;
@@ -105,17 +106,23 @@ export class FourLeafThreadPost extends FourLeafPost {
 
 export class FourLeafPagePost extends FourLeafPost {}
 
-export async function* getNewThreadPosts(board: string): AsyncGenerator<FourLeafThreadPost> {
+export async function getNewThreadPosts(board: string, postFeed: SimpleChannel<FourLeafPost>): Promise<void> {
   const catalog = await fetchJson<RawFourLeafCatalog>(`https://a.4cdn.org/${board}/catalog.json`);
 
   for (const rawPage of catalog) {
     for (const rawCatalogThread of rawPage.threads) {
       const mentionTracker = new Map<number, FourLeafThreadPost>();
       const results = [];
+      let rawThread: RawFourLeafCatalogThread;
 
-      const rawThread = await fetchJson<RawFourLeafCatalogThread>(
-        `https://a.4cdn.org/${board}/thread/${rawCatalogThread.no}.json`
-      );
+      try {
+        rawThread = await fetchJson<RawFourLeafCatalogThread>(
+          `https://a.4cdn.org/${board}/thread/${rawCatalogThread.no}.json`
+        );
+      } catch (error) {
+        console.error(`Exception while fetching fourleaf thread: ${String(error)}`);
+        continue;
+      }
 
       const threadSubject = rawThread.posts[0]?.sub;
 
@@ -156,12 +163,12 @@ export async function* getNewThreadPosts(board: string): AsyncGenerator<FourLeaf
           rawPost.no === rawCatalogThread.no
         );
 
-        mentionTracker.set(rawPost.no, post);
         results.push(post);
+        mentionTracker.set(rawPost.no, post);
       }
 
       for (const result of results) {
-        yield result;
+        postFeed.send(result);
       }
     }
   }

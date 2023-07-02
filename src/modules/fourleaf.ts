@@ -174,15 +174,16 @@ export class FourLeafModule extends Module {
     for (;;) {
       const entries = await this.database.getEntries();
       const boards = new Set(entries.map((entry) => entry.board));
+      const futures = [];
 
       for (const board of boards) {
-        try {
-          for await (const post of getNewThreadPosts(board)) {
-            this.postFeed.send(post);
-          }
-        } catch (error) {
-          console.error(`Exception while fetching fourleaf entries: ${String(error)}`);
-        }
+        futures.push(getNewThreadPosts(board, this.postFeed));
+      }
+
+      try {
+        await Promise.all(futures);
+      } catch (error) {
+        console.error(`Exception while fetching fourleaf entries: ${String(error)}`);
       }
     }
   }
