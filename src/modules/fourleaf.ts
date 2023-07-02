@@ -169,7 +169,7 @@ export class FourLeafModule extends Module {
     this.bot = bot;
     this.database = new FourLeafDatabase(this.bot.database);
     this.postFeed = new SimpleChannel();
-    bot.on(BotEventNames.ClientReady, () => void this.catalogProduceloop());
+    bot.on(BotEventNames.ClientReady, () => void this.catalogProduceLoop());
     bot.on(BotEventNames.ClientReady, () => void this.frontPageProducerLoop());
     bot.on(BotEventNames.ClientReady, () => void this.messageLoop());
   }
@@ -178,7 +178,7 @@ export class FourLeafModule extends Module {
     return new FourLeafModule(bot);
   }
 
-  private async catalogProduceloop(): Promise<void> {
+  private async catalogProduceLoop(): Promise<void> {
     if (this.catalogProducerLoopRunning) {
       return;
     }
