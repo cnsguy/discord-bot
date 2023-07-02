@@ -1,5 +1,5 @@
 import { Module } from '../module';
-import { Bot, BotEventNames } from '../bot';
+import { Bot } from '../bot';
 import { limitTextLength, escapeLinksForDiscord } from '../util';
 import { RSSItemError, RSSItem } from './rss/item';
 import {
@@ -61,7 +61,7 @@ export class RSSModule extends Module {
 
     this.bot = bot;
     this.database = new RSSDatabase(this.bot.database);
-    bot.on(BotEventNames.ClientReady, () => void this.timerLoop());
+    void this.timerLoop();
   }
 
   public static load(bot: Bot): RSSModule {

@@ -1,5 +1,5 @@
 import { Module } from '../module';
-import { Bot, BotEventNames } from '../bot';
+import { Bot } from '../bot';
 import {
   ChatInputCommandInteraction,
   EmbedBuilder,
@@ -88,9 +88,6 @@ function shouldSendPost(entry: FourLeafMonitorEntry, post: FourLeafPost): boolea
 
 export class FourLeafModule extends Module {
   private readonly database: FourLeafDatabase;
-  private catalogProducerLoopRunning = false;
-  private frontPageProducerLoopRunning = false;
-  private messageLoopRunning = false;
   private readonly postFeed: SimpleChannel<FourLeafPost>;
 
   private constructor(private readonly bot: Bot) {
@@ -169,9 +166,10 @@ export class FourLeafModule extends Module {
     this.bot = bot;
     this.database = new FourLeafDatabase(this.bot.database);
     this.postFeed = new SimpleChannel();
-    bot.on(BotEventNames.ClientReady, () => void this.catalogProduceLoop());
-    bot.on(BotEventNames.ClientReady, () => void this.frontPageProducerLoop());
-    bot.on(BotEventNames.ClientReady, () => void this.messageLoop());
+
+    void this.catalogProduceLoop();
+    void this.frontPageProducerLoop();
+    void this.messageLoop();
   }
 
   public static load(bot: Bot): FourLeafModule {
@@ -179,12 +177,6 @@ export class FourLeafModule extends Module {
   }
 
   private async catalogProduceLoop(): Promise<void> {
-    if (this.catalogProducerLoopRunning) {
-      return;
-    }
-
-    this.catalogProducerLoopRunning = true;
-
     for (;;) {
       const entries = await this.database.getEntries();
       const boards = new Set(entries.map((entry) => entry.board));
@@ -202,12 +194,6 @@ export class FourLeafModule extends Module {
   }
 
   private async frontPageProducerLoop(): Promise<void> {
-    if (this.frontPageProducerLoopRunning) {
-      return;
-    }
-
-    this.frontPageProducerLoopRunning = true;
-
     for (;;) {
       const entries = await this.database.getEntries();
       const boards = new Set(entries.map((entry) => entry.board));
@@ -227,12 +213,6 @@ export class FourLeafModule extends Module {
   }
 
   private async messageLoop(): Promise<void> {
-    if (this.messageLoopRunning) {
-      return;
-    }
-
-    this.messageLoopRunning = true;
-
     for (;;) {
       const entries = await this.database.getEntries();
 
