@@ -107,7 +107,14 @@ export class FourLeafThreadPost extends FourLeafPost {
 export class FourLeafPagePost extends FourLeafPost {}
 
 export async function getNewThreadPosts(board: string, postFeed: SimpleChannel<FourLeafPost>): Promise<void> {
-  const catalog = await fetchJson<RawFourLeafCatalog>(`https://a.4cdn.org/${board}/catalog.json`);
+  let catalog: RawFourLeafCatalog;
+
+  try {
+    catalog = await fetchJson<RawFourLeafCatalog>(`https://a.4cdn.org/${board}/catalog.json`);
+  } catch (error) {
+    console.error(`Exception while fetching fourleaf catalog: ${String(error)}`);
+    return;
+  }
 
   for (const rawPage of catalog) {
     for (const rawCatalogThread of rawPage.threads) {
