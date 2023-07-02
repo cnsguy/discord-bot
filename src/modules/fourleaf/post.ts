@@ -59,7 +59,8 @@ export class FourLeafPost {
     public readonly threadSubject: string | undefined,
     public readonly time: number,
     public readonly fileUrl: string | undefined,
-    public readonly board: string
+    public readonly board: string,
+    public readonly isOp: boolean
   ) {
     this.url = url;
     this.no = no;
@@ -72,6 +73,7 @@ export class FourLeafPost {
     this.time = time;
     this.fileUrl = fileUrl;
     this.board = board;
+    this.isOp = isOp;
   }
 }
 
@@ -90,11 +92,10 @@ export class FourLeafThreadPost extends FourLeafPost {
     time: number,
     fileUrl: string | undefined,
     board: string,
-    public readonly isOp: boolean | undefined
+    isOp: boolean
   ) {
-    super(url, no, name, subject, message, filename, trip, threadSubject, time, fileUrl, board);
+    super(url, no, name, subject, message, filename, trip, threadSubject, time, fileUrl, board, isOp);
     this.numThreadReplies = 1;
-    this.isOp = isOp;
   }
 
   public addMention(): void {
@@ -197,7 +198,8 @@ export async function getNewFrontPagePosts(board: string): Promise<FourLeafPageP
         threadSubject,
         rawPost.time,
         rawPost.ext !== undefined ? `https://i.4cdn.org/${board}/${rawPost.tim}${rawPost.ext}` : undefined,
-        board
+        board,
+        rawPost.no === rawThread.posts[0]?.no
       );
 
       results.push(post);

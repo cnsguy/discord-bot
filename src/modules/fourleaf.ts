@@ -73,14 +73,8 @@ function shouldSendPost(entry: FourLeafMonitorEntry, post: FourLeafPost): boolea
     }
   }
 
-  if (entry.isOp !== null) {
-    if (!(post instanceof FourLeafThreadPost)) {
-      return false;
-    }
-
-    if (entry.isOp !== post.isOp) {
-      return false;
-    }
+  if (entry.isOp !== null && entry.isOp !== post.isOp) {
+    return false;
   }
 
   return true;
