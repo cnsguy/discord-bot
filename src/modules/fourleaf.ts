@@ -197,8 +197,6 @@ export class FourLeafModule extends Module {
           console.error(`Exception while fetching fourleaf entries: ${String(error)}`);
         }
       }
-
-      await new Promise((resolve) => setTimeout(resolve, 5000));
     }
   }
 
@@ -222,7 +220,6 @@ export class FourLeafModule extends Module {
           console.error(`Exception while fetching fourleaf entries: ${String(error)}`);
         }
       }
-      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
 
