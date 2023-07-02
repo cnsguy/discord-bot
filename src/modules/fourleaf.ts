@@ -215,8 +215,6 @@ export class FourLeafModule extends Module {
           await this.processFourLeafPost(post, entry);
         }
       }
-
-      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
 
