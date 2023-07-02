@@ -21,7 +21,7 @@ interface RawFourLeafEntry {
   readonly filenameRegexIgnoreCase: number | null;
   readonly threadSubjectRegex: string | null;
   readonly threadSubjectRegexIgnoreCase: number | null;
-  readonly minReplies: number | null;
+  readonly minThreadReplies: number | null;
   readonly isOp: number | null;
   readonly extraText: string | null;
 }
@@ -47,7 +47,7 @@ export class FourLeafMonitorEntry {
     public readonly filenameRegexIgnoreCase: boolean | null,
     public readonly threadSubjectRegex: string | null,
     public readonly threadSubjectRegexIgnoreCase: boolean | null,
-    public readonly minReplies: number | null,
+    public readonly minThreadReplies: number | null,
     public readonly isOp: boolean | null,
     public readonly extraText: string | null,
     private readonly database: Database
@@ -65,7 +65,7 @@ export class FourLeafMonitorEntry {
     this.filenameRegexIgnoreCase = filenameRegexIgnoreCase;
     this.threadSubjectRegex = threadSubjectRegex;
     this.threadSubjectRegexIgnoreCase = threadSubjectRegexIgnoreCase;
-    this.minReplies = minReplies;
+    this.minThreadReplies = minThreadReplies;
     this.isOp = isOp;
     this.extraText = extraText;
     this.database = database;
@@ -105,7 +105,7 @@ function processRawEntry(database: Database, entry: RawFourLeafEntry): FourLeafM
     entry.filenameRegexIgnoreCase === 1,
     entry.threadSubjectRegex,
     entry.threadSubjectRegexIgnoreCase === 1,
-    entry.minReplies,
+    entry.minThreadReplies,
     entry.isOp !== null ? entry.isOp === 1 : null,
     entry.extraText,
     database
@@ -134,7 +134,7 @@ export class FourLeafDatabase {
     filenameRegexIgnoreCase: boolean | null,
     threadSubjectRegex: string | null,
     threadSubjectRegexIgnoreCase: boolean | null,
-    minReplies: number | null,
+    minThreadReplies: number | null,
     isOp: boolean | null,
     extraText: string | null
   ): Promise<void> {
@@ -152,7 +152,7 @@ export class FourLeafDatabase {
         'filenameRegexIgnoreCase, ' +
         'threadSubjectRegex, ' +
         'threadSubjectRegexIgnoreCase, ' +
-        'minReplies, ' +
+        'minThreadReplies, ' +
         'isOp, ' +
         'extraText ' +
         ') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -168,7 +168,7 @@ export class FourLeafDatabase {
       filenameRegexIgnoreCase,
       threadSubjectRegex,
       threadSubjectRegexIgnoreCase,
-      minReplies,
+      minThreadReplies,
       isOp,
       extraText
     );
@@ -187,7 +187,7 @@ export class FourLeafDatabase {
     filenameRegexIgnoreCase: boolean | null,
     threadSubjectRegex: string | null,
     threadSubjectRegexIgnoreCase: boolean | null,
-    minReplies: number | null,
+    minThreadReplies: number | null,
     isOp: boolean | null,
     extraText: string | null
   ): Promise<FourLeafMonitorEntry | undefined> {
@@ -205,7 +205,7 @@ export class FourLeafDatabase {
         'AND filenameRegexIgnoreCase = ? ' +
         'AND threadSubjectRegex IS ? ' +
         'AND threadSubjectRegexIgnoreCase = ? ' +
-        'AND minReplies IS ? ' +
+        'AND minThreadReplies IS ? ' +
         'AND isOp IS ? ' +
         'AND extraText IS ? ' +
         'LIMIT 1',
@@ -221,7 +221,7 @@ export class FourLeafDatabase {
       filenameRegexIgnoreCase,
       threadSubjectRegex,
       threadSubjectRegexIgnoreCase,
-      minReplies,
+      minThreadReplies,
       isOp,
       extraText
     );

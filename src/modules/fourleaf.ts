@@ -62,12 +62,12 @@ function shouldSendPost(entry: FourLeafMonitorEntry, post: FourLeafPost): boolea
     }
   }
 
-  if (entry.minReplies !== null) {
+  if (entry.minThreadReplies !== null) {
     if (!(post instanceof FourLeafThreadPost)) {
       return false;
     }
 
-    if (post.numReplies < entry.minReplies) {
+    if (post.numThreadReplies < entry.minThreadReplies) {
       return false;
     }
   }
@@ -131,7 +131,9 @@ export class FourLeafModule extends Module {
       )
       .addBooleanOption(new SlashCommandBooleanOption().setName('is-op').setDescription('OP only'))
       .addIntegerOption(
-        new SlashCommandIntegerOption().setName('min-replies').setDescription('Minimum number of replies')
+        new SlashCommandIntegerOption()
+          .setName('min-thread-replies')
+          .setDescription('Minimum number of replies in the thread to the given post')
       )
       .addStringOption(new SlashCommandStringOption().setName('extra-text').setDescription('Extra text'));
 
@@ -188,7 +190,7 @@ export class FourLeafModule extends Module {
 
       for (const board of boards) {
         try {
-          for (const post of await getNewThreadPosts(board)) {
+          for await (const post of getNewThreadPosts(board)) {
             this.postQueue.push(post);
           }
         } catch (error) {
@@ -325,7 +327,7 @@ export class FourLeafModule extends Module {
     const filenameRegexIgnoreCase = interaction.options.getBoolean('filename-regex-ignore-case') ?? true;
     const threadSubjectRegex = interaction.options.getString('thread-subject-regex');
     const threadSubjectRegexIgnoreCase = interaction.options.getBoolean('thread-subject-regex-ignore-case') ?? true;
-    const minReplies = interaction.options.getInteger('min-replies');
+    const minThreadReplies = interaction.options.getInteger('min-thread-replies');
     const isOp = interaction.options.getBoolean('is-op');
     const extraText = interaction.options.getString('extra-text');
 
@@ -349,7 +351,7 @@ export class FourLeafModule extends Module {
       filenameRegexIgnoreCase,
       threadSubjectRegex,
       threadSubjectRegexIgnoreCase,
-      minReplies,
+      minThreadReplies,
       isOp,
       extraText
     );
@@ -379,7 +381,7 @@ export class FourLeafModule extends Module {
       filenameRegexIgnoreCase,
       threadSubjectRegex,
       threadSubjectRegexIgnoreCase,
-      minReplies,
+      minThreadReplies,
       isOp,
       extraText
     );
@@ -445,8 +447,8 @@ export class FourLeafModule extends Module {
         builder.addFields({ name: 'Thread subject regex is case sensitive', value: 'true' });
       }
 
-      if (entry.minReplies !== null) {
-        builder.addFields({ name: 'Min replies', value: String(entry.minReplies) });
+      if (entry.minThreadReplies !== null) {
+        builder.addFields({ name: 'Min replies', value: String(entry.minThreadReplies) });
       }
 
       if (entry.isOp !== null) {

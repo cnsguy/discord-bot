@@ -12,7 +12,7 @@ CREATE TABLE fourleaf_monitor (
   filenameRegexIgnoreCase BOOLEAN NOT NULL,
   threadSubjectRegex TEXT,
   threadSubjectRegexIgnoreCase BOOLEAN NOT NULL,
-  minReplies INTEGER,
+  minThreadReplies INTEGER,
   isOp BOOLEAN,
   extraText TEXT,
 );

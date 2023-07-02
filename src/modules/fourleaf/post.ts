@@ -76,7 +76,7 @@ export class FourLeafPost {
 }
 
 export class FourLeafThreadPost extends FourLeafPost {
-  public numReplies: number;
+  public numThreadReplies: number;
 
   public constructor(
     url: string,
@@ -93,24 +93,25 @@ export class FourLeafThreadPost extends FourLeafPost {
     public readonly isOp: boolean | undefined
   ) {
     super(url, no, name, subject, message, filename, trip, threadSubject, time, fileUrl, board);
-    this.numReplies = 1;
+    this.numThreadReplies = 1;
     this.isOp = isOp;
   }
 
   public addMention(): void {
-    this.numReplies += 1;
+    this.numThreadReplies += 1;
   }
 }
 
 export class FourLeafPagePost extends FourLeafPost {}
 
-export async function getNewThreadPosts(board: string): Promise<FourLeafThreadPost[]> {
+export async function* getNewThreadPosts(board: string): AsyncGenerator<FourLeafThreadPost> {
   const catalog = await slowFetchJson<RawFourLeafCatalog>(`https://a.4cdn.org/${board}/catalog.json`, 1000);
-  const results = [];
-  const mentionTracker = new Map<number, FourLeafThreadPost>();
 
   for (const rawPage of catalog) {
     for (const rawCatalogThread of rawPage.threads) {
+      const mentionTracker = new Map<number, FourLeafThreadPost>();
+      const results = [];
+
       const rawThread = await slowFetchJson<RawFourLeafCatalogThread>(
         `https://a.4cdn.org/${board}/thread/${rawCatalogThread.no}.json`,
         1000
@@ -158,10 +159,12 @@ export async function getNewThreadPosts(board: string): Promise<FourLeafThreadPo
         mentionTracker.set(rawPost.no, post);
         results.push(post);
       }
+
+      for (const result of results) {
+        yield result;
+      }
     }
   }
-
-  return results;
 }
 
 export async function getNewFrontPagePosts(board: string): Promise<FourLeafPagePost[]> {
