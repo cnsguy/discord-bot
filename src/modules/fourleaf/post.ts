@@ -1,6 +1,5 @@
-import { fetchJson } from '../../util';
+import { fetchJson, slowFetchJson } from '../../util';
 import { convert } from 'html-to-text';
-import { SimpleChannel } from 'channel-ts';
 
 interface RawFourLeafCatalogThread {
   readonly no: number;
@@ -106,7 +105,7 @@ export class FourLeafThreadPost extends FourLeafPost {
 
 export class FourLeafPagePost extends FourLeafPost {}
 
-export async function getNewThreadPosts(board: string, postFeed: SimpleChannel<FourLeafPost>): Promise<void> {
+export async function getNewThreadPosts(board: string, postFeed: Set<FourLeafPost>): Promise<void> {
   let catalog: RawFourLeafCatalog;
 
   try {
@@ -123,8 +122,9 @@ export async function getNewThreadPosts(board: string, postFeed: SimpleChannel<F
       let rawThread: RawFourLeafCatalogThread;
 
       try {
-        rawThread = await fetchJson<RawFourLeafCatalogThread>(
-          `https://a.4cdn.org/${board}/thread/${rawCatalogThread.no}.json`
+        rawThread = await slowFetchJson<RawFourLeafCatalogThread>(
+          `https://a.4cdn.org/${board}/thread/${rawCatalogThread.no}.json`,
+          1000
         );
       } catch (error) {
         console.error(`Exception while fetching fourleaf thread: ${String(error)}`);
@@ -175,7 +175,7 @@ export async function getNewThreadPosts(board: string, postFeed: SimpleChannel<F
       }
 
       for (const result of results) {
-        postFeed.send(result);
+        postFeed.add(result);
       }
     }
   }

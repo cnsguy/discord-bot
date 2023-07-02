@@ -15,7 +15,6 @@
   "dependencies": {
     "@types/html-to-text": "^9.0.1",
     "axios": "^1.2.5",
-    "channel-ts": "^0.1.2",
     "cheerio": "^1.0.0-rc.12",
     "chrono-node": "^2.5.0",
     "date-fns": "^2.29.3",

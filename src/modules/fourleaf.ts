@@ -16,7 +16,6 @@ import { ManageGuild } from '../permission';
 import { wrapRegexInCode } from '../util';
 import { FourLeafPost, FourLeafThreadPost, getNewFrontPagePosts, getNewThreadPosts } from './fourleaf/post';
 import { getFourLeafBoards } from './fourleaf/boards';
-import { SimpleChannel } from 'channel-ts';
 
 function shouldSendPost(entry: FourLeafMonitorEntry, post: FourLeafPost): boolean {
   if (entry.board != post.board) {
@@ -82,7 +81,7 @@ function shouldSendPost(entry: FourLeafMonitorEntry, post: FourLeafPost): boolea
 
 export class FourLeafModule extends Module {
   private readonly database: FourLeafDatabase;
-  private readonly postFeed: SimpleChannel<FourLeafPost>;
+  private readonly postFeed: Set<FourLeafPost>;
 
   private constructor(private readonly bot: Bot) {
     super();
@@ -159,7 +158,7 @@ export class FourLeafModule extends Module {
     bot.registerSlashCommand(fourleafCommand, (interaction) => this.fourleafCommand(interaction));
     this.bot = bot;
     this.database = new FourLeafDatabase(this.bot.database);
-    this.postFeed = new SimpleChannel();
+    this.postFeed = new Set();
 
     void this.catalogProduceLoop();
     void this.frontPageProducerLoop();
@@ -196,7 +195,7 @@ export class FourLeafModule extends Module {
       for (const board of boards) {
         try {
           for (const post of await getNewFrontPagePosts(board)) {
-            this.postFeed.send(post);
+            this.postFeed.add(post);
           }
         } catch (error) {
           console.error(`Exception while fetching fourleaf entries: ${String(error)}`);
@@ -211,11 +210,14 @@ export class FourLeafModule extends Module {
     for (;;) {
       const entries = await this.database.getEntries();
 
-      for await (const post of this.postFeed) {
+      for (const post of this.postFeed.values()) {
         for (const entry of entries) {
           await this.processFourLeafPost(post, entry);
         }
       }
+
+      this.postFeed.clear();
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
 
