@@ -105,7 +105,7 @@ export class FourLeafThreadPost extends FourLeafPost {
 
 export class FourLeafPagePost extends FourLeafPost {}
 
-export async function getNewThreadPosts(board: string, postFeed: Set<FourLeafPost>): Promise<void> {
+export async function getNewThreadPosts(board: string, postFeed: Map<number, FourLeafPost>): Promise<void> {
   let catalog: RawFourLeafCatalog;
 
   try {
@@ -175,7 +175,7 @@ export async function getNewThreadPosts(board: string, postFeed: Set<FourLeafPos
       }
 
       for (const result of results) {
-        postFeed.add(result);
+        postFeed.set(result.no, result);
       }
     }
   }

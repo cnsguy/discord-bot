@@ -81,7 +81,7 @@ function shouldSendPost(entry: FourLeafMonitorEntry, post: FourLeafPost): boolea
 
 export class FourLeafModule extends Module {
   private readonly database: FourLeafDatabase;
-  private readonly postFeed: Set<FourLeafPost>;
+  private readonly postFeed: Map<number, FourLeafPost>;
 
   private constructor(private readonly bot: Bot) {
     super();
@@ -158,7 +158,7 @@ export class FourLeafModule extends Module {
     bot.registerSlashCommand(fourleafCommand, (interaction) => this.fourleafCommand(interaction));
     this.bot = bot;
     this.database = new FourLeafDatabase(this.bot.database);
-    this.postFeed = new Set();
+    this.postFeed = new Map();
 
     void this.catalogProduceLoop();
     void this.frontPageProducerLoop();
@@ -195,7 +195,7 @@ export class FourLeafModule extends Module {
       for (const board of boards) {
         try {
           for (const post of await getNewFrontPagePosts(board)) {
-            this.postFeed.add(post);
+            this.postFeed.set(post.no, post);
           }
         } catch (error) {
           console.error(`Exception while fetching fourleaf entries: ${String(error)}`);
