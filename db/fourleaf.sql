@@ -14,6 +14,7 @@ CREATE TABLE fourleaf_monitor (
   threadSubjectRegexIgnoreCase BOOLEAN NOT NULL,
   minThreadReplies INTEGER,
   isOp BOOLEAN,
+  fileOnly BOOLEAN,
   extraText TEXT,
 );
 

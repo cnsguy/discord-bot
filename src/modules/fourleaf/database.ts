@@ -23,6 +23,7 @@ interface RawFourLeafEntry {
   readonly threadSubjectRegexIgnoreCase: number | null;
   readonly minThreadReplies: number | null;
   readonly isOp: number | null;
+  readonly fileOnly: number | null;
   readonly extraText: string | null;
 }
 
@@ -49,6 +50,7 @@ export class FourLeafMonitorEntry {
     public readonly threadSubjectRegexIgnoreCase: boolean | null,
     public readonly minThreadReplies: number | null,
     public readonly isOp: boolean | null,
+    public readonly fileOnly: boolean | null,
     public readonly extraText: string | null,
     private readonly database: Database
   ) {
@@ -67,6 +69,7 @@ export class FourLeafMonitorEntry {
     this.threadSubjectRegexIgnoreCase = threadSubjectRegexIgnoreCase;
     this.minThreadReplies = minThreadReplies;
     this.isOp = isOp;
+    this.fileOnly = fileOnly;
     this.extraText = extraText;
     this.database = database;
   }
@@ -107,6 +110,7 @@ function processRawEntry(database: Database, entry: RawFourLeafEntry): FourLeafM
     entry.threadSubjectRegexIgnoreCase === 1,
     entry.minThreadReplies,
     entry.isOp !== null ? entry.isOp === 1 : null,
+    entry.fileOnly !== null ? entry.fileOnly === 1 : null,
     entry.extraText,
     database
   );
@@ -136,6 +140,7 @@ export class FourLeafDatabase {
     threadSubjectRegexIgnoreCase: boolean | null,
     minThreadReplies: number | null,
     isOp: boolean | null,
+    fileOnly: boolean | null,
     extraText: string | null
   ): Promise<void> {
     await this.database.run(
@@ -154,8 +159,9 @@ export class FourLeafDatabase {
         'threadSubjectRegexIgnoreCase, ' +
         'minThreadReplies, ' +
         'isOp, ' +
+        'fileOnly, ' +
         'extraText ' +
-        ') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        ') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       channelId,
       board,
       messageRegex,
@@ -170,6 +176,7 @@ export class FourLeafDatabase {
       threadSubjectRegexIgnoreCase,
       minThreadReplies,
       isOp,
+      fileOnly,
       extraText
     );
   }
@@ -189,6 +196,7 @@ export class FourLeafDatabase {
     threadSubjectRegexIgnoreCase: boolean | null,
     minThreadReplies: number | null,
     isOp: boolean | null,
+    fileOnly: boolean | null,
     extraText: string | null
   ): Promise<FourLeafMonitorEntry | undefined> {
     const raw: RawFourLeafEntry | undefined = await this.database.get(
@@ -207,6 +215,7 @@ export class FourLeafDatabase {
         'AND threadSubjectRegexIgnoreCase = ? ' +
         'AND minThreadReplies IS ? ' +
         'AND isOp IS ? ' +
+        'AND fileOnly IS ? ' +
         'AND extraText IS ? ' +
         'LIMIT 1',
       channelId,
@@ -223,6 +232,7 @@ export class FourLeafDatabase {
       threadSubjectRegexIgnoreCase,
       minThreadReplies,
       isOp,
+      fileOnly,
       extraText
     );
 

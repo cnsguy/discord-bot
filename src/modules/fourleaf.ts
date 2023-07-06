@@ -76,6 +76,10 @@ function shouldSendPost(entry: FourLeafMonitorEntry, post: FourLeafPost): boolea
     return false;
   }
 
+  if (entry.fileOnly && post.fileUrl === undefined) {
+    return false;
+  }
+
   return true;
 }
 
@@ -121,6 +125,7 @@ export class FourLeafModule extends Module {
           .setDescription('Ignore case for thread subject regex')
       )
       .addBooleanOption(new SlashCommandBooleanOption().setName('is-op').setDescription('OP only'))
+      .addBooleanOption(new SlashCommandBooleanOption().setName('file-only').setDescription('Only display files'))
       .addIntegerOption(
         new SlashCommandIntegerOption()
           .setName('min-thread-replies')
@@ -189,7 +194,8 @@ export class FourLeafModule extends Module {
       await channel.send(post.fileUrl);
     }
 
-    if (post.message !== undefined) {
+    // XXXish: entry.fileOnly is filtered in shouldSendPost
+    if (post.message !== undefined && !entry.fileOnly) {
       let message = post.message;
 
       while (message.length > 0) {
@@ -296,6 +302,7 @@ export class FourLeafModule extends Module {
     const threadSubjectRegexIgnoreCase = interaction.options.getBoolean('thread-subject-regex-ignore-case') ?? true;
     const minThreadReplies = interaction.options.getInteger('min-thread-replies');
     const isOp = interaction.options.getBoolean('is-op');
+    const fileOnly = interaction.options.getBoolean('file-only');
     const extraText = interaction.options.getString('extra-text');
 
     const boards = await getFourLeafBoards();
@@ -320,6 +327,7 @@ export class FourLeafModule extends Module {
       threadSubjectRegexIgnoreCase,
       minThreadReplies,
       isOp,
+      fileOnly,
       extraText
     );
 
@@ -350,6 +358,7 @@ export class FourLeafModule extends Module {
       threadSubjectRegexIgnoreCase,
       minThreadReplies,
       isOp,
+      fileOnly,
       extraText
     );
 
@@ -420,6 +429,10 @@ export class FourLeafModule extends Module {
 
       if (entry.isOp !== null) {
         builder.addFields({ name: 'Is OP', value: String(entry.isOp) });
+      }
+
+      if (entry.fileOnly !== null) {
+        builder.addFields({ name: 'File only', value: String(entry.fileOnly) });
       }
 
       if (entry.extraText !== null) {
