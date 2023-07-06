@@ -9,13 +9,13 @@ import {
   SlashCommandStringOption,
   SlashCommandSubcommandBuilder,
   SlashCommandSubcommandGroupBuilder,
-  TextBasedChannel,
 } from 'discord.js';
 import { FourLeafDatabase, FourLeafMonitorEntry } from './fourleaf/database';
 import { ManageGuild } from '../permission';
 import { wrapRegexInCode } from '../util';
 import { FourLeafPost, FourLeafThreadPost, getNewFrontPagePosts, getNewThreadPosts } from './fourleaf/post';
 import { getFourLeafBoards } from './fourleaf/boards';
+import { SimpleChannel } from 'channel-ts';
 
 function shouldSendPost(entry: FourLeafMonitorEntry, post: FourLeafPost): boolean {
   if (entry.board != post.board) {
@@ -81,7 +81,7 @@ function shouldSendPost(entry: FourLeafMonitorEntry, post: FourLeafPost): boolea
 
 export class FourLeafModule extends Module {
   private readonly database: FourLeafDatabase;
-  private readonly postFeed: Map<number, FourLeafPost>;
+  private readonly postChannel = new SimpleChannel<[FourLeafPost, FourLeafMonitorEntry]>();
 
   private constructor(private readonly bot: Bot) {
     super();
@@ -158,7 +158,6 @@ export class FourLeafModule extends Module {
     bot.registerSlashCommand(fourleafCommand, (interaction) => this.fourleafCommand(interaction));
     this.bot = bot;
     this.database = new FourLeafDatabase(this.bot.database);
-    this.postFeed = new Map();
 
     void this.catalogProduceLoop();
     void this.frontPageProducerLoop();
@@ -169,88 +168,14 @@ export class FourLeafModule extends Module {
     return new FourLeafModule(bot);
   }
 
-  private async catalogProduceLoop(): Promise<void> {
-    for (;;) {
-      const entries = await this.database.getEntries();
-      const boards = new Set(entries.map((entry) => entry.board));
-      const futures = [];
-
-      for (const board of boards) {
-        futures.push(getNewThreadPosts(board, this.postFeed));
-      }
-
-      try {
-        await Promise.all(futures);
-      } catch (error) {
-        console.error(`Exception while fetching fourleaf entries: ${String(error)}`);
-      }
-    }
-  }
-
-  private async frontPageProducerLoop(): Promise<void> {
-    for (;;) {
-      const entries = await this.database.getEntries();
-      const boards = new Set(entries.map((entry) => entry.board));
-
-      for (const board of boards) {
-        try {
-          for (const post of await getNewFrontPagePosts(board)) {
-            this.postFeed.set(post.no, post);
-          }
-        } catch (error) {
-          console.error(`Exception while fetching fourleaf entries: ${String(error)}`);
-        }
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
-  }
-
-  private async messageLoop(): Promise<void> {
-    for (;;) {
-      const entries = await this.database.getEntries();
-
-      for (const post of this.postFeed.values()) {
-        for (const entry of entries) {
-          await this.processFourLeafPost(post, entry);
-        }
-      }
-
-      this.postFeed.clear();
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
-  }
-
-  private async processFourLeafPost(post: FourLeafPost, entry: FourLeafMonitorEntry): Promise<void> {
+  private async sendFourLeafPost(post: FourLeafPost, entry: FourLeafMonitorEntry): Promise<void> {
     const channel = await this.bot.client.channels.fetch(entry.channelId);
 
     if (channel === null || !channel.isTextBased()) {
+      // XXX TODO
       return;
     }
 
-    if (!shouldSendPost(entry, post)) {
-      return;
-    }
-
-    const sentEntry = await this.database.getSentEntry(entry.channelId, post.no);
-
-    if (sentEntry !== undefined) {
-      return;
-    }
-
-    try {
-      await this.database.newSentEntry(entry.channelId, post.no);
-      await this.sendFourLeafPost(channel, post, entry);
-    } catch (error) {
-      console.error(`Exception while sending a fourleaf entry: ${String(error)}`);
-    }
-  }
-
-  private async sendFourLeafPost(
-    channel: TextBasedChannel,
-    post: FourLeafPost,
-    entry: FourLeafMonitorEntry
-  ): Promise<void> {
     let header = `> ============ <${post.url}> ============`;
 
     if (entry.extraText) {
@@ -271,6 +196,78 @@ export class FourLeafModule extends Module {
         await channel.send(part);
         message = message.slice(2000);
       }
+    }
+  }
+
+  private async processPostForEntry(post: FourLeafPost, entry: FourLeafMonitorEntry): Promise<void> {
+    if (!shouldSendPost(entry, post)) {
+      return;
+    }
+
+    const sentEntry = await this.database.getSentEntry(entry.channelId, post.no);
+
+    if (sentEntry !== undefined) {
+      return;
+    }
+
+    try {
+      await this.database.newSentEntry(entry.channelId, post.no);
+      this.postChannel.send([post, entry]);
+    } catch (error) {
+      console.error(`Exception while sending a fourleaf entry: ${String(error)}`);
+    }
+  }
+
+  private async processPost(post: FourLeafPost): Promise<void> {
+    const entries = await this.database.getEntries();
+
+    for (const entry of entries) {
+      await this.processPostForEntry(post, entry);
+    }
+  }
+
+  private async processBoardPosts(board: string): Promise<void> {
+    for await (const post of getNewThreadPosts(board)) {
+      await this.processPost(post);
+    }
+  }
+
+  private async catalogProduceLoop(): Promise<void> {
+    for (;;) {
+      const entries = await this.database.getEntries();
+      const boards = new Set(entries.map((entry) => entry.board));
+      const futures = Array.from(boards, (board) => this.processBoardPosts(board));
+
+      try {
+        await Promise.all(futures);
+      } catch (error) {
+        console.error(`Exception while fetching fourleaf entries: ${String(error)}`);
+      }
+    }
+  }
+
+  private async frontPageProducerLoop(): Promise<void> {
+    for (;;) {
+      const entries = await this.database.getEntries();
+      const boards = new Set(entries.map((entry) => entry.board));
+
+      for (const board of boards) {
+        try {
+          for (const post of await getNewFrontPagePosts(board)) {
+            await this.processPost(post);
+          }
+        } catch (error) {
+          console.error(`Exception while fetching fourleaf entries: ${String(error)}`);
+        }
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
+
+  private async messageLoop(): Promise<void> {
+    for await (const [post, entry] of this.postChannel) {
+      await this.sendFourLeafPost(post, entry);
     }
   }
 
