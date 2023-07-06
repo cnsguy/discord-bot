@@ -77,7 +77,9 @@ export class RSSModule extends Module {
           const channel = await this.bot.client.channels.fetch(entry.channelId);
 
           if (channel === null || !channel.isTextBased()) {
-            return;
+            console.error(`RSS: Channel ${entry.channelId} lost, removing entry`);
+            await entry.delete();
+            continue;
           }
 
           let result: RSSItem[];
