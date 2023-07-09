@@ -195,7 +195,7 @@ export class DateModule extends Module {
       const now = Date.now();
 
       for (const entry of entries) {
-        if (now >= entry.nextDate.getTime()) {
+        if (now >= entry.getNextDate.getTime()) {
           let channel: Channel | null = null;
 
           try {
@@ -354,7 +354,7 @@ export class DateModule extends Module {
         .addFields({ name: 'ID', value: id.toString() })
         .addFields({ name: 'Channel', value: `<#${entry.channelId}>` })
         .addFields({ name: 'Message', value: entry.messageContent })
-        .addFields({ name: 'Time left', value: formatDistanceStrict(entry.nextDate, new Date()) });
+        .addFields({ name: 'Time left', value: formatDistanceStrict(entry.getNextDate, new Date()) });
 
       if (entry.repeatInterval !== null) {
         builder.addFields({ name: 'Repeat interval', value: formatDistanceStrict(new Date(0), entry.repeatInterval) });

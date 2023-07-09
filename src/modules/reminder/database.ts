@@ -24,7 +24,7 @@ class DateEntry {
     public readonly guildId: string | null,
     public readonly channelId: string,
     public readonly senderId: string,
-    private innerNextDate: Date,
+    private nextDate: Date,
     public readonly repeatInterval: Date | null,
     private readonly database: Database
   ) {
@@ -33,18 +33,18 @@ class DateEntry {
     this.guildId = guildId;
     this.channelId = channelId;
     this.senderId = senderId;
-    this.innerNextDate = innerNextDate;
+    this.nextDate = nextDate;
     this.repeatInterval = repeatInterval;
     this.database = database;
   }
 
-  public get nextDate(): Date {
-    return this.innerNextDate;
+  public get getNextDate(): Date {
+    return this.nextDate;
   }
 
   public async setNextDate(date: Date): Promise<void> {
-    this.innerNextDate = date;
-    await this.database.run('UPDATE date SET nextDate = ? WHERE id = ?', this.nextDate.toISOString(), this.id);
+    this.nextDate = date;
+    await this.database.run('UPDATE date SET nextDate = ? WHERE id = ?', this.getNextDate.toISOString(), this.id);
   }
 
   public async delete(): Promise<void> {
