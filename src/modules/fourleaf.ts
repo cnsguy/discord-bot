@@ -274,7 +274,11 @@ export class FourLeafModule extends Module {
 
   private async messageLoop(): Promise<void> {
     for await (const [post, entry] of this.postChannel) {
-      await this.sendFourLeafPost(post, entry);
+      try {
+        await this.sendFourLeafPost(post, entry);
+      } catch (error) {
+        console.error(`Failed to fetch fourleaf post: ${String(error)}}`);
+      }
     }
   }
 
