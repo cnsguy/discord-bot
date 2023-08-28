@@ -178,7 +178,7 @@ export class FourLeafModule extends Module {
 
     if (channel === null || !channel.isTextBased()) {
       console.error(`Fourleaf: Channel ${entry.channelId} lost, removing entry`);
-      await entry.delete();
+      // await entry.delete();
       return;
     }
 

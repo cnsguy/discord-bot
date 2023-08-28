@@ -78,7 +78,7 @@ export class RSSModule extends Module {
 
           if (channel === null || !channel.isTextBased()) {
             console.error(`RSS: Channel ${entry.channelId} lost, removing entry`);
-            await entry.delete();
+            // await entry.delete();
             continue;
           }
 

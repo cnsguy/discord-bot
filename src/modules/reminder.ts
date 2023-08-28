@@ -202,7 +202,7 @@ export class DateModule extends Module {
             channel = await this.bot.client.channels.fetch(entry.channelId);
           } catch (error) {
             console.error(`Reminder: Channel ${entry.channelId} lost, removing entry`);
-            await entry.delete();
+            // await entry.delete();
             continue;
           }
 
