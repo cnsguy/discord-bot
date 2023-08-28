@@ -1,3 +1,5 @@
+import { Channel, Client } from 'discord.js';
+
 export class MissingEnvironmentError extends Error {
   public constructor(message: string) {
     super(message);
@@ -102,4 +104,12 @@ export async function slowFetchJson<T>(url: string, time: number): Promise<T> {
   }
 
   return result;
+}
+
+export async function fetchChannel(client: Client, channelId: string): Promise<Channel | null> {
+  try {
+    return await client.channels.fetch(channelId);
+  } catch (err) {
+    return null;
+  }
 }

@@ -1,6 +1,6 @@
 import { Module } from '../module';
 import { Bot } from '../bot';
-import { limitTextLength, escapeLinksForDiscord } from '../util';
+import { limitTextLength, escapeLinksForDiscord, fetchChannel } from '../util';
 import { RSSItemError, RSSItem } from './rss/item';
 import {
   ChatInputCommandInteraction,
@@ -74,7 +74,7 @@ export class RSSModule extends Module {
         const entries = await this.database.getEntries();
 
         for (const entry of entries) {
-          const channel = await this.bot.client.channels.fetch(entry.channelId);
+          const channel = await fetchChannel(this.bot.client, entry.channelId);
 
           if (channel === null || !channel.isTextBased()) {
             console.error(`RSS: Channel ${entry.channelId} lost, removing entry`);

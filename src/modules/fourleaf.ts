@@ -12,7 +12,7 @@ import {
 } from 'discord.js';
 import { FourLeafDatabase, FourLeafMonitorEntry } from './fourleaf/database';
 import { ManageGuild } from '../permission';
-import { wrapRegexInCode } from '../util';
+import { fetchChannel, wrapRegexInCode } from '../util';
 import { FourLeafPost, FourLeafThreadPost, getNewFrontPagePosts, getNewThreadPosts } from './fourleaf/post';
 import { getFourLeafBoards } from './fourleaf/boards';
 import { SimpleChannel } from 'channel-ts';
@@ -174,7 +174,7 @@ export class FourLeafModule extends Module {
   }
 
   private async sendFourLeafPost(post: FourLeafPost, entry: FourLeafMonitorEntry): Promise<void> {
-    const channel = await this.bot.client.channels.fetch(entry.channelId);
+    const channel = await fetchChannel(this.bot.client, entry.channelId);
 
     if (channel === null || !channel.isTextBased()) {
       console.error(`Fourleaf: Channel ${entry.channelId} lost, removing entry`);

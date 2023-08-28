@@ -8,13 +8,13 @@ import {
   SlashCommandUserOption,
   SlashCommandSubcommandBuilder,
   SlashCommandSubcommandGroupBuilder,
-  Channel,
 } from 'discord.js';
 import { ReminderDatabase } from './reminder/database';
 import { splitEvery } from 'ramda';
 import { parseDate } from 'chrono-node';
 import { formatDistanceStrict } from 'date-fns';
 import { ManageGuild } from '../permission';
+import { fetchChannel } from '../util';
 
 enum DatePart {
   Year = 1,
@@ -196,11 +196,9 @@ export class DateModule extends Module {
 
       for (const entry of entries) {
         if (now >= entry.getNextDate.getTime()) {
-          let channel: Channel | null = null;
+          const channel = await fetchChannel(this.bot.client, entry.channelId);
 
-          try {
-            channel = await this.bot.client.channels.fetch(entry.channelId);
-          } catch (error) {
+          if (channel === null || !channel.isTextBased()) {
             console.error(`Reminder: Channel ${entry.channelId} lost, removing entry`);
             // await entry.delete();
             continue;
