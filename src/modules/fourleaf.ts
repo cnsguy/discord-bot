@@ -182,28 +182,22 @@ export class FourLeafModule extends Module {
       return;
     }
 
-    let header = `> ============ <${post.url}> ============`;
+    const builder = new EmbedBuilder();
+    builder.setTitle(post.url).setURL(post.url);
 
-    if (entry.extraText) {
-      header += ' ' + entry.extraText;
+    if (entry.extraText !== null) {
+      builder.addFields({ name: 'Extra info', value: entry.extraText });
     }
 
-    await channel.send(header);
-
-    if (post.fileUrl !== undefined) {
-      await channel.send(post.fileUrl);
+    // TODO drop entry.fileOnly and related completely
+    if (post.message !== undefined) {
+      const part = post.message.slice(0, 2000);
+      builder.setDescription(part);
     }
 
-    // XXXish: entry.fileOnly is filtered in shouldSendPost
-    if (post.message !== undefined && !entry.fileOnly) {
-      let message = post.message;
-
-      while (message.length > 0) {
-        const part = message.slice(0, 2000);
-        await channel.send(part);
-        message = message.slice(2000);
-      }
-    }
+    await channel.send({
+      embeds: [builder]
+    });
   }
 
   private async processPostForEntry(post: FourLeafPost, entry: FourLeafMonitorEntry): Promise<void> {
@@ -240,7 +234,7 @@ export class FourLeafModule extends Module {
   }
 
   private async catalogProduceLoop(): Promise<void> {
-    for (;;) {
+    for (; ;) {
       const entries = await this.database.getEntries();
       const boards = new Set(entries.map((entry) => entry.board));
       const futures = Array.from(boards, (board) => this.processBoardPosts(board));
@@ -254,7 +248,7 @@ export class FourLeafModule extends Module {
   }
 
   private async frontPageProducerLoop(): Promise<void> {
-    for (;;) {
+    for (; ;) {
       const entries = await this.database.getEntries();
       const boards = new Set(entries.map((entry) => entry.board));
 
