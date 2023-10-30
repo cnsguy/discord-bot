@@ -182,12 +182,12 @@ export class FourLeafModule extends Module {
       return;
     }
 
+    if (entry.extraText !== null) {
+      channel.send(entry.extraText);
+    }
+
     const builder = new EmbedBuilder();
     builder.setTitle(post.url).setURL(post.url);
-
-    if (entry.extraText !== null) {
-      builder.addFields({ name: 'Extra info', value: entry.extraText });
-    }
 
     // TODO drop entry.fileOnly and related completely
     if (post.message !== undefined) {
