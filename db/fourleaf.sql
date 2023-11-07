@@ -15,7 +15,7 @@ CREATE TABLE fourleaf_monitor (
   minThreadReplies INTEGER,
   isOp BOOLEAN,
   fileOnly BOOLEAN,
-  extraText TEXT,
+  extraText TEXT
 );
 
 CREATE TABLE fourleaf_sent (
