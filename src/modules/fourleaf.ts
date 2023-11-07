@@ -186,11 +186,13 @@ export class FourLeafModule extends Module {
       channel.send(entry.extraText);
     }
 
-    const builder = new EmbedBuilder();
-    builder.setTitle(post.url).setURL(post.url);
+    const builder = new EmbedBuilder().setTitle(post.url).setURL(post.url);
 
-    // TODO drop entry.fileOnly and related completely
-    if (post.message !== undefined) {
+    if (post.fileUrl !== undefined) {
+      builder.setImage(post.fileUrl);
+    }
+
+    if (!entry.fileOnly && post.message !== undefined) {
       const part = post.message.slice(0, 2000);
       builder.setDescription(part);
     }
