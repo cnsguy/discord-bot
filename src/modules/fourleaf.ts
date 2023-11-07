@@ -196,7 +196,7 @@ export class FourLeafModule extends Module {
     }
 
     await channel.send({
-      embeds: [builder]
+      embeds: [builder],
     });
   }
 
@@ -234,7 +234,7 @@ export class FourLeafModule extends Module {
   }
 
   private async catalogProduceLoop(): Promise<void> {
-    for (; ;) {
+    for (;;) {
       const entries = await this.database.getEntries();
       const boards = new Set(entries.map((entry) => entry.board));
       const futures = Array.from(boards, (board) => this.processBoardPosts(board));
@@ -248,7 +248,7 @@ export class FourLeafModule extends Module {
   }
 
   private async frontPageProducerLoop(): Promise<void> {
-    for (; ;) {
+    for (;;) {
       const entries = await this.database.getEntries();
       const boards = new Set(entries.map((entry) => entry.board));
 
