@@ -189,7 +189,7 @@ export class FourLeafModule extends Module {
     const builder = new EmbedBuilder().setTitle(post.url).setURL(post.url);
 
     if (post.fileUrl !== undefined) {
-      builder.setImage(post.fileUrl);
+      builder.setImage("https://s.4cdn.org/image/spoiler-vg1.png");
     }
 
     if (!entry.fileOnly && post.message !== undefined) {
